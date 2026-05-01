@@ -17,6 +17,7 @@ const createOrder = `-- name: CreateOrder :one
 INSERT INTO orders (
     id,
     customer_id,
+    order_number,
     status,
     subtotal,
     discount,
@@ -24,9 +25,9 @@ INSERT INTO orders (
     created_at,
     updated_at
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8
+    $1, $2, DEFAULT, $3, $4, $5, $6, $7, $8
 )
-RETURNING id, customer_id, status, subtotal, discount, total, created_at, updated_at
+RETURNING id, customer_id, status, subtotal, discount, total, created_at, updated_at, order_number
 `
 
 type CreateOrderParams struct {
@@ -61,6 +62,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		&i.Total,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.OrderNumber,
 	)
 	return i, err
 }
@@ -110,7 +112,7 @@ func (q *Queries) CreateOrderItem(ctx context.Context, arg CreateOrderItemParams
 }
 
 const getOrderByID = `-- name: GetOrderByID :one
-SELECT id, customer_id, status, subtotal, discount, total, created_at, updated_at
+SELECT id, customer_id, status, subtotal, discount, total, created_at, updated_at, order_number
 FROM orders
 WHERE id = $1
 `
@@ -127,6 +129,7 @@ func (q *Queries) GetOrderByID(ctx context.Context, id uuid.UUID) (Order, error)
 		&i.Total,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.OrderNumber,
 	)
 	return i, err
 }
@@ -166,7 +169,7 @@ func (q *Queries) GetOrderItemsByOrderID(ctx context.Context, orderID uuid.UUID)
 }
 
 const listOrders = `-- name: ListOrders :many
-SELECT id, customer_id, status, subtotal, discount, total, created_at, updated_at
+SELECT id, customer_id, status, subtotal, discount, total, created_at, updated_at, order_number
 FROM orders
 ORDER BY created_at DESC
 `
@@ -189,6 +192,7 @@ func (q *Queries) ListOrders(ctx context.Context) ([]Order, error) {
 			&i.Total,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.OrderNumber,
 		); err != nil {
 			return nil, err
 		}
@@ -201,7 +205,7 @@ func (q *Queries) ListOrders(ctx context.Context) ([]Order, error) {
 }
 
 const listOrdersByCustomerID = `-- name: ListOrdersByCustomerID :many
-SELECT id, customer_id, status, subtotal, discount, total, created_at, updated_at
+SELECT id, customer_id, status, subtotal, discount, total, created_at, updated_at, order_number
 FROM orders
 WHERE customer_id = $1
 ORDER BY created_at DESC
@@ -225,6 +229,7 @@ func (q *Queries) ListOrdersByCustomerID(ctx context.Context, customerID uuid.UU
 			&i.Total,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.OrderNumber,
 		); err != nil {
 			return nil, err
 		}
@@ -246,7 +251,7 @@ SET
     total = $6,
     updated_at = $7
 WHERE id = $1
-RETURNING id, customer_id, status, subtotal, discount, total, created_at, updated_at
+RETURNING id, customer_id, status, subtotal, discount, total, created_at, updated_at, order_number
 `
 
 type UpdateOrderParams struct {
@@ -279,6 +284,7 @@ func (q *Queries) UpdateOrder(ctx context.Context, arg UpdateOrderParams) (Order
 		&i.Total,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.OrderNumber,
 	)
 	return i, err
 }
@@ -328,7 +334,7 @@ SET
     status = $2,
     updated_at = $3
 WHERE id = $1
-RETURNING id, customer_id, status, subtotal, discount, total, created_at, updated_at
+RETURNING id, customer_id, status, subtotal, discount, total, created_at, updated_at, order_number
 `
 
 type UpdateOrderStatusParams struct {
@@ -349,6 +355,7 @@ func (q *Queries) UpdateOrderStatus(ctx context.Context, arg UpdateOrderStatusPa
 		&i.Total,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.OrderNumber,
 	)
 	return i, err
 }

@@ -10,15 +10,16 @@ import (
 )
 
 type Order struct {
-	ID         uuid.UUID
-	CustomerID uuid.UUID
-	Status     valueobjects.OrderStatus
-	Items      []OrderItem
-	Subtotal   decimal.Decimal
-	Discount   decimal.Decimal
-	Total      decimal.Decimal
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	ID          uuid.UUID
+	CustomerID  uuid.UUID
+	OrderNumber int64
+	Status      valueobjects.OrderStatus
+	Items       []OrderItem
+	Subtotal    decimal.Decimal
+	Discount    decimal.Decimal
+	Total       decimal.Decimal
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 func (o *Order) CalculateTotal() {

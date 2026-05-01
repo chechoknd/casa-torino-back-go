@@ -48,7 +48,7 @@ func main() {
 	ingredientUseCase := ingredientuc.NewUseCase(ingredientRepo)
 	recipeUseCase := recipeuc.NewUseCase(recipeRepo, productRepo, ingredientRepo)
 	orderUseCase := orderuc.NewUseCase(orderRepo, customerRepo, productRepo)
-	paymentUseCase := paymentuc.NewUseCase(paymentRepo, orderRepo)
+	paymentUseCase := paymentuc.NewUseCase(paymentRepo, orderRepo, productRepo)
 
 	router := routes.NewRouter(routes.Dependencies{
 		Health:      handlers.NewHealthHandler(),

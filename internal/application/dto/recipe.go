@@ -29,14 +29,15 @@ type RecipeItemOutput struct {
 }
 
 type RecipeOutput struct {
-	ID        uuid.UUID          `json:"id"`
-	ProductID uuid.UUID          `json:"product_id"`
-	Name      string             `json:"name"`
-	Portions  int                `json:"portions"`
-	Items     []RecipeItemOutput `json:"items"`
-	CreatedAt time.Time          `json:"created_at"`
-	UpdatedAt time.Time          `json:"updated_at"`
-	IsActive  bool               `json:"is_active"`
+	ID          uuid.UUID          `json:"id"`
+	ProductID   uuid.UUID          `json:"product_id"`
+	ProductName string             `json:"product_name"`
+	Name        string             `json:"name"`
+	Portions    int                `json:"portions"`
+	Items       []RecipeItemOutput `json:"items"`
+	CreatedAt   time.Time          `json:"created_at"`
+	UpdatedAt   time.Time          `json:"updated_at"`
+	IsActive    bool               `json:"is_active"`
 }
 
 type RecipeCostOutput struct {

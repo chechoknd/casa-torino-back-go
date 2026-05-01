@@ -17,47 +17,64 @@ import (
 )
 
 func TestCreateOrderSuccess(t *testing.T) {
+	customerID := uuid.New()
 	ct, _ := valueobjects.NewCustomerType("PERSON")
 	customerRepo := &mocks.CustomerRepository{
 		FindByIDFn: func(context.Context, uuid.UUID) (*entities.Customer, error) {
-			return &entities.Customer{ID: uuid.New(), CustomerType: ct, IsActive: true}, nil
+			return &entities.Customer{ID: customerID, FullName: "Laura Gomez", CustomerType: ct, IsActive: true}, nil
 		},
 	}
-	orderRepo := &mocks.OrderRepository{CreateFn: func(context.Context, *entities.Order) error { return nil }}
+	orderRepo := &mocks.OrderRepository{CreateFn: func(_ context.Context, order *entities.Order) error {
+		order.OrderNumber = 12
+		return nil
+	}}
 	uc := orderuc.NewUseCase(orderRepo, customerRepo, &mocks.ProductRepository{})
 
-	out, err := uc.CreateOrder(context.Background(), dto.CreateOrderInput{CustomerID: uuid.New()})
+	out, err := uc.CreateOrder(context.Background(), dto.CreateOrderInput{CustomerID: customerID})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if out.Status != "PENDING" {
 		t.Fatalf("unexpected status: %s", out.Status)
 	}
+	if out.OrderNumber != 12 || out.OrderLabel != "#0012" || out.CustomerName != "Laura Gomez" {
+		t.Fatalf("unexpected output: %+v", out)
+	}
 }
 
 func TestAddOrderItemSuccess(t *testing.T) {
 	productType, _ := valueobjects.NewProductType("LUNCH")
 	orderID := uuid.New()
+	customerID := uuid.New()
+	productID := uuid.New()
 	orderRepo := &mocks.OrderRepository{
 		FindByIDFn: func(context.Context, uuid.UUID) (*entities.Order, error) {
-			return &entities.Order{ID: orderID, Status: valueobjects.OrderStatusPending, Discount: decimal.Zero}, nil
+			return &entities.Order{ID: orderID, CustomerID: customerID, OrderNumber: 4, Status: valueobjects.OrderStatusPending, Discount: decimal.Zero}, nil
 		},
 		AddItemFn: func(context.Context, uuid.UUID, *entities.OrderItem) error { return nil },
 		UpdateFn:  func(context.Context, *entities.Order) error { return nil },
 	}
 	productRepo := &mocks.ProductRepository{
 		FindByIDFn: func(context.Context, uuid.UUID) (*entities.Product, error) {
-			return &entities.Product{ID: uuid.New(), ProductType: productType, BasePrice: decimal.RequireFromString("12000"), IsActive: true}, nil
+			return &entities.Product{ID: productID, Name: "Bandeja paisa", ProductType: productType, BasePrice: decimal.RequireFromString("12000"), IsActive: true}, nil
 		},
 	}
-	uc := orderuc.NewUseCase(orderRepo, &mocks.CustomerRepository{}, productRepo)
+	customerRepo := &mocks.CustomerRepository{
+		FindByIDFn: func(context.Context, uuid.UUID) (*entities.Customer, error) {
+			return &entities.Customer{ID: customerID, FullName: "Carlos Ruiz", IsActive: true}, nil
+		},
+	}
+	uc := orderuc.NewUseCase(orderRepo, customerRepo, productRepo)
 
-	out, err := uc.AddOrderItem(context.Background(), dto.AddOrderItemInput{OrderID: orderID, ProductID: uuid.New(), Quantity: 2})
+	out, err := uc.AddOrderItem(context.Background(), dto.AddOrderItemInput{OrderID: orderID, ProductID: productID, Quantity: 2})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if !out.Total.Equal(decimal.RequireFromString("24000")) {
 		t.Fatalf("unexpected total: %s", out.Total)
+	}
+	if len(out.Items) != 1 || out.Items[0].ProductName != "Bandeja paisa" {
+		t.Fatalf("unexpected items: %+v", out.Items)
 	}
 }
 

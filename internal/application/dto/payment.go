@@ -19,12 +19,21 @@ type UpdatePaymentStatusInput struct {
 	Status    string
 }
 
+type PaymentProductOutput struct {
+	ProductID   uuid.UUID `json:"product_id"`
+	ProductName string    `json:"product_name"`
+	Quantity    int       `json:"quantity"`
+}
+
 type PaymentOutput struct {
-	ID        uuid.UUID       `json:"id"`
-	OrderID   uuid.UUID       `json:"order_id"`
-	Amount    decimal.Decimal `json:"amount"`
-	Method    string          `json:"method"`
-	Status    string          `json:"status"`
-	CreatedAt time.Time       `json:"created_at"`
-	UpdatedAt time.Time       `json:"updated_at"`
+	ID          uuid.UUID              `json:"id"`
+	OrderID     uuid.UUID              `json:"order_id"`
+	OrderNumber int64                  `json:"order_number"`
+	OrderLabel  string                 `json:"order_label"`
+	Amount      decimal.Decimal        `json:"amount"`
+	Method      string                 `json:"method"`
+	Status      string                 `json:"status"`
+	Products    []PaymentProductOutput `json:"products"`
+	CreatedAt   time.Time              `json:"created_at"`
+	UpdatedAt   time.Time              `json:"updated_at"`
 }

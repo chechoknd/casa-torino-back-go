@@ -16,6 +16,7 @@ type RecipeHandlerUseCase interface {
 	CreateRecipe(ctx context.Context, input dto.CreateRecipeInput) (dto.RecipeOutput, error)
 	AddRecipeItem(ctx context.Context, input dto.AddRecipeItemInput) (dto.RecipeOutput, error)
 	GetRecipeByProduct(ctx context.Context, productID uuid.UUID) (dto.RecipeOutput, error)
+	ListRecipes(ctx context.Context) ([]dto.RecipeOutput, error)
 	GetRecipeCost(ctx context.Context, recipeID uuid.UUID) (dto.RecipeCostOutput, error)
 }
 
@@ -94,6 +95,16 @@ func (h *RecipeHandler) GetByProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	out, err := h.useCase.GetRecipeByProduct(r.Context(), productID)
+	if err != nil {
+		responses.WriteError(w, err)
+		return
+	}
+	responses.WriteJSON(w, http.StatusOK, out)
+}
+
+func (h *RecipeHandler) List(w http.ResponseWriter, r *http.Request) {
+	noCache(w)
+	out, err := h.useCase.ListRecipes(r.Context())
 	if err != nil {
 		responses.WriteError(w, err)
 		return

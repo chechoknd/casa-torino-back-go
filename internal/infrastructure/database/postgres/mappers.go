@@ -97,6 +97,10 @@ func mapOrder(row sqlcdb.Order, items []sqlcdb.OrderItem) (entities.Order, error
 	if err != nil {
 		return entities.Order{}, err
 	}
+	orderNumber := int64(0)
+	if row.OrderNumber.Valid {
+		orderNumber = row.OrderNumber.Int64
+	}
 
 	mappedItems := make([]entities.OrderItem, 0, len(items))
 	for _, item := range items {
@@ -111,15 +115,16 @@ func mapOrder(row sqlcdb.Order, items []sqlcdb.OrderItem) (entities.Order, error
 	}
 
 	return entities.Order{
-		ID:         row.ID,
-		CustomerID: row.CustomerID,
-		Status:     status,
-		Items:      mappedItems,
-		Subtotal:   row.Subtotal,
-		Discount:   row.Discount,
-		Total:      row.Total,
-		CreatedAt:  row.CreatedAt,
-		UpdatedAt:  row.UpdatedAt,
+		ID:          row.ID,
+		CustomerID:  row.CustomerID,
+		OrderNumber: orderNumber,
+		Status:      status,
+		Items:       mappedItems,
+		Subtotal:    row.Subtotal,
+		Discount:    row.Discount,
+		Total:       row.Total,
+		CreatedAt:   row.CreatedAt,
+		UpdatedAt:   row.UpdatedAt,
 	}, nil
 }
 

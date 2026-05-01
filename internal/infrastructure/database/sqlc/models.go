@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/shopspring/decimal"
 )
 
@@ -35,14 +36,15 @@ type Ingredient struct {
 }
 
 type Order struct {
-	ID         uuid.UUID
-	CustomerID uuid.UUID
-	Status     string
-	Subtotal   decimal.Decimal
-	Discount   decimal.Decimal
-	Total      decimal.Decimal
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	ID          uuid.UUID
+	CustomerID  uuid.UUID
+	Status      string
+	Subtotal    decimal.Decimal
+	Discount    decimal.Decimal
+	Total       decimal.Decimal
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	OrderNumber pgtype.Int8
 }
 
 type OrderItem struct {

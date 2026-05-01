@@ -24,24 +24,28 @@ type UpdateOrderStatusInput struct {
 }
 
 type OrderItemOutput struct {
-	ID        uuid.UUID       `json:"id"`
-	OrderID   uuid.UUID       `json:"order_id"`
-	ProductID uuid.UUID       `json:"product_id"`
-	Quantity  int             `json:"quantity"`
-	UnitPrice decimal.Decimal `json:"unit_price"`
-	Subtotal  decimal.Decimal `json:"subtotal"`
+	ID          uuid.UUID       `json:"id"`
+	OrderID     uuid.UUID       `json:"order_id"`
+	ProductID   uuid.UUID       `json:"product_id"`
+	ProductName string          `json:"product_name"`
+	Quantity    int             `json:"quantity"`
+	UnitPrice   decimal.Decimal `json:"unit_price"`
+	Subtotal    decimal.Decimal `json:"subtotal"`
 }
 
 type OrderOutput struct {
-	ID         uuid.UUID         `json:"id"`
-	CustomerID uuid.UUID         `json:"customer_id"`
-	Status     string            `json:"status"`
-	Items      []OrderItemOutput `json:"items"`
-	Subtotal   decimal.Decimal   `json:"subtotal"`
-	Discount   decimal.Decimal   `json:"discount"`
-	Total      decimal.Decimal   `json:"total"`
-	CreatedAt  time.Time         `json:"created_at"`
-	UpdatedAt  time.Time         `json:"updated_at"`
+	ID           uuid.UUID         `json:"id"`
+	CustomerID   uuid.UUID         `json:"customer_id"`
+	CustomerName string            `json:"customer_name"`
+	OrderNumber  int64             `json:"order_number"`
+	OrderLabel   string            `json:"order_label"`
+	Status       string            `json:"status"`
+	Items        []OrderItemOutput `json:"items"`
+	Subtotal     decimal.Decimal   `json:"subtotal"`
+	Discount     decimal.Decimal   `json:"discount"`
+	Total        decimal.Decimal   `json:"total"`
+	CreatedAt    time.Time         `json:"created_at"`
+	UpdatedAt    time.Time         `json:"updated_at"`
 }
 
 type ListOrdersInput struct {

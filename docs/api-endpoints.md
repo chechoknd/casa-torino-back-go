@@ -38,6 +38,7 @@ http://localhost:8080
 ## Recipes
 
 - `POST http://localhost:8080/recipes`
+- `GET http://localhost:8080/recipes`
 - `POST http://localhost:8080/recipes/{id}/items`
 - `GET http://localhost:8080/recipes/product/{product_id}`
 - `GET http://localhost:8080/recipes/{id}/cost`
@@ -53,8 +54,15 @@ http://localhost:8080
 
 ## Payments
 
+- `GET http://localhost:8080/payments`
 - `POST http://localhost:8080/payments`
 - `PATCH http://localhost:8080/payments/{id}/status`
+
+## Campos relevantes de visualización
+
+- `GET /recipes` y `GET /recipes/product/{product_id}` retornan `product_name`
+- `GET /payments` y `GET /orders/{id}/payments` retornan `products[].product_name`
+- `GET /orders` y `GET /orders/{id}` retornan `order_number`, `order_label`, `customer_name` y `items[].product_name`
 
 ## Query Params Disponibles
 

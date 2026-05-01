@@ -58,7 +58,7 @@ func (uc *UseCase) CreateRecipe(ctx context.Context, input dto.CreateRecipeInput
 		return dto.RecipeOutput{}, err
 	}
 
-	return toRecipeOutput(*recipe), nil
+	return uc.toRecipeOutput(ctx, *recipe)
 }
 
 func (uc *UseCase) AddRecipeItem(ctx context.Context, input dto.AddRecipeItemInput) (dto.RecipeOutput, error) {
@@ -104,7 +104,7 @@ func (uc *UseCase) AddRecipeItem(ctx context.Context, input dto.AddRecipeItemInp
 		return dto.RecipeOutput{}, err
 	}
 
-	return toRecipeOutput(*updatedRecipe), nil
+	return uc.toRecipeOutput(ctx, *updatedRecipe)
 }
 
 func (uc *UseCase) GetRecipeByProduct(ctx context.Context, productID uuid.UUID) (dto.RecipeOutput, error) {
@@ -116,7 +116,25 @@ func (uc *UseCase) GetRecipeByProduct(ctx context.Context, productID uuid.UUID) 
 		return dto.RecipeOutput{}, domainerrors.ErrInactive
 	}
 
-	return toRecipeOutput(*recipe), nil
+	return uc.toRecipeOutput(ctx, *recipe)
+}
+
+func (uc *UseCase) ListRecipes(ctx context.Context) ([]dto.RecipeOutput, error) {
+	recipes, err := uc.recipes.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	output := make([]dto.RecipeOutput, 0, len(recipes))
+	for _, recipe := range recipes {
+		mapped, err := uc.toRecipeOutput(ctx, recipe)
+		if err != nil {
+			return nil, err
+		}
+		output = append(output, mapped)
+	}
+
+	return output, nil
 }
 
 func (uc *UseCase) CalculateRecipeCost(ctx context.Context, productID uuid.UUID) (dto.RecipeCostOutput, error) {
@@ -158,7 +176,13 @@ func (uc *UseCase) calculateRecipeCost(ctx context.Context, recipe *entities.Rec
 	}, nil
 }
 
-func toRecipeOutput(recipe entities.Recipe) dto.RecipeOutput {
+func (uc *UseCase) toRecipeOutput(ctx context.Context, recipe entities.Recipe) (dto.RecipeOutput, error) {
+	productName := ""
+	product, err := uc.products.FindByID(ctx, recipe.ProductID)
+	if err == nil {
+		productName = product.Name
+	}
+
 	items := make([]dto.RecipeItemOutput, 0, len(recipe.Items))
 	for _, item := range recipe.Items {
 		items = append(items, dto.RecipeItemOutput{
@@ -171,13 +195,14 @@ func toRecipeOutput(recipe entities.Recipe) dto.RecipeOutput {
 	}
 
 	return dto.RecipeOutput{
-		ID:        recipe.ID,
-		ProductID: recipe.ProductID,
-		Name:      recipe.Name,
-		Portions:  recipe.Portions,
-		Items:     items,
-		CreatedAt: recipe.CreatedAt,
-		UpdatedAt: recipe.UpdatedAt,
-		IsActive:  recipe.IsActive,
-	}
+		ID:          recipe.ID,
+		ProductID:   recipe.ProductID,
+		ProductName: productName,
+		Name:        recipe.Name,
+		Portions:    recipe.Portions,
+		Items:       items,
+		CreatedAt:   recipe.CreatedAt,
+		UpdatedAt:   recipe.UpdatedAt,
+		IsActive:    recipe.IsActive,
+	}, nil
 }

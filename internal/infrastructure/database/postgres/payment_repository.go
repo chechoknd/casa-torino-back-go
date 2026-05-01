@@ -102,3 +102,22 @@ func (r *PaymentRepository) ListByOrderID(ctx context.Context, orderID uuid.UUID
 
 	return payments, nil
 }
+
+func (r *PaymentRepository) List(ctx context.Context) ([]entities.Payment, error) {
+	rows, err := r.queries.ListPayments(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	payments := make([]entities.Payment, 0, len(rows))
+	for _, row := range rows {
+		payment, err := mapPayment(row)
+		if err != nil {
+			return nil, err
+		}
+
+		payments = append(payments, payment)
+	}
+
+	return payments, nil
+}

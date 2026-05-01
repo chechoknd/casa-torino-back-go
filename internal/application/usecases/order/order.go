@@ -2,6 +2,7 @@ package order
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -42,22 +43,23 @@ func (uc *UseCase) CreateOrder(ctx context.Context, input dto.CreateOrderInput) 
 
 	now := time.Now().UTC()
 	order := &entities.Order{
-		ID:         uuid.New(),
-		CustomerID: input.CustomerID,
-		Status:     valueobjects.OrderStatusPending,
-		Items:      []entities.OrderItem{},
-		Subtotal:   decimal.Zero,
-		Discount:   input.Discount,
-		Total:      decimal.Zero,
-		CreatedAt:  now,
-		UpdatedAt:  now,
+		ID:          uuid.New(),
+		CustomerID:  input.CustomerID,
+		OrderNumber: 0,
+		Status:      valueobjects.OrderStatusPending,
+		Items:       []entities.OrderItem{},
+		Subtotal:    decimal.Zero,
+		Discount:    input.Discount,
+		Total:       decimal.Zero,
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 
 	if err := uc.orders.Create(ctx, order); err != nil {
 		return dto.OrderOutput{}, err
 	}
 
-	return toOrderOutput(*order), nil
+	return uc.toOrderOutput(ctx, *order)
 }
 
 func (uc *UseCase) AddOrderItem(ctx context.Context, input dto.AddOrderItemInput) (dto.OrderOutput, error) {
@@ -99,7 +101,7 @@ func (uc *UseCase) AddOrderItem(ctx context.Context, input dto.AddOrderItemInput
 		return dto.OrderOutput{}, err
 	}
 
-	return toOrderOutput(*order), nil
+	return uc.toOrderOutput(ctx, *order)
 }
 
 func (uc *UseCase) CalculateOrderTotal(ctx context.Context, orderID uuid.UUID) (dto.OrderOutput, error) {
@@ -115,7 +117,7 @@ func (uc *UseCase) CalculateOrderTotal(ctx context.Context, orderID uuid.UUID) (
 		return dto.OrderOutput{}, err
 	}
 
-	return toOrderOutput(*order), nil
+	return uc.toOrderOutput(ctx, *order)
 }
 
 func (uc *UseCase) UpdateOrderStatus(ctx context.Context, input dto.UpdateOrderStatusInput) (dto.OrderOutput, error) {
@@ -140,7 +142,7 @@ func (uc *UseCase) UpdateOrderStatus(ctx context.Context, input dto.UpdateOrderS
 		return dto.OrderOutput{}, err
 	}
 
-	return toOrderOutput(*order), nil
+	return uc.toOrderOutput(ctx, *order)
 }
 
 func (uc *UseCase) GetOrder(ctx context.Context, id uuid.UUID) (dto.OrderOutput, error) {
@@ -148,7 +150,7 @@ func (uc *UseCase) GetOrder(ctx context.Context, id uuid.UUID) (dto.OrderOutput,
 	if err != nil {
 		return dto.OrderOutput{}, err
 	}
-	return toOrderOutput(*order), nil
+	return uc.toOrderOutput(ctx, *order)
 }
 
 func (uc *UseCase) ListOrders(ctx context.Context, input dto.ListOrdersInput) ([]dto.OrderOutput, error) {
@@ -168,34 +170,62 @@ func (uc *UseCase) ListOrders(ctx context.Context, input dto.ListOrdersInput) ([
 
 	output := make([]dto.OrderOutput, 0, len(orders))
 	for _, order := range orders {
-		output = append(output, toOrderOutput(order))
+		mapped, err := uc.toOrderOutput(ctx, order)
+		if err != nil {
+			return nil, err
+		}
+		output = append(output, mapped)
 	}
 
 	return output, nil
 }
 
-func toOrderOutput(order entities.Order) dto.OrderOutput {
+func (uc *UseCase) toOrderOutput(ctx context.Context, order entities.Order) (dto.OrderOutput, error) {
+	customerName := ""
+	customer, err := uc.customers.FindByID(ctx, order.CustomerID)
+	if err == nil {
+		customerName = customer.FullName
+	}
+
 	items := make([]dto.OrderItemOutput, 0, len(order.Items))
 	for _, item := range order.Items {
+		productName := ""
+		product, err := uc.products.FindByID(ctx, item.ProductID)
+		if err == nil {
+			productName = product.Name
+		}
+
 		items = append(items, dto.OrderItemOutput{
-			ID:        item.ID,
-			OrderID:   item.OrderID,
-			ProductID: item.ProductID,
-			Quantity:  item.Quantity,
-			UnitPrice: item.UnitPrice,
-			Subtotal:  item.Subtotal,
+			ID:          item.ID,
+			OrderID:     item.OrderID,
+			ProductID:   item.ProductID,
+			ProductName: productName,
+			Quantity:    item.Quantity,
+			UnitPrice:   item.UnitPrice,
+			Subtotal:    item.Subtotal,
 		})
 	}
 
 	return dto.OrderOutput{
-		ID:         order.ID,
-		CustomerID: order.CustomerID,
-		Status:     string(order.Status),
-		Items:      items,
-		Subtotal:   order.Subtotal,
-		Discount:   order.Discount,
-		Total:      order.Total,
-		CreatedAt:  order.CreatedAt,
-		UpdatedAt:  order.UpdatedAt,
+		ID:           order.ID,
+		CustomerID:   order.CustomerID,
+		CustomerName: customerName,
+		OrderNumber:  order.OrderNumber,
+		OrderLabel:   formatOrderLabel(order.OrderNumber),
+		Status:       string(order.Status),
+		Items:        items,
+		Subtotal:     order.Subtotal,
+		Discount:     order.Discount,
+		Total:        order.Total,
+		CreatedAt:    order.CreatedAt,
+		UpdatedAt:    order.UpdatedAt,
+	}, nil
+}
+
+func formatOrderLabel(orderNumber int64) string {
+	if orderNumber <= 0 {
+		return ""
 	}
+
+	return fmt.Sprintf("#%04d", orderNumber)
 }

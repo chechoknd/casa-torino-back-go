@@ -187,3 +187,27 @@ func (r *RecipeRepository) FindByProductID(ctx context.Context, productID uuid.U
 
 	return &mapped, nil
 }
+
+func (r *RecipeRepository) List(ctx context.Context) ([]entities.Recipe, error) {
+	rows, err := r.queries.ListRecipes(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	recipes := make([]entities.Recipe, 0, len(rows))
+	for _, row := range rows {
+		items, err := r.queries.GetRecipeItemsByRecipeID(ctx, row.ID)
+		if err != nil {
+			return nil, mapError(err)
+		}
+
+		recipe, err := mapRecipe(row, items)
+		if err != nil {
+			return nil, err
+		}
+
+		recipes = append(recipes, recipe)
+	}
+
+	return recipes, nil
+}

@@ -15,6 +15,7 @@ import (
 type PaymentHandlerUseCase interface {
 	CreatePayment(ctx context.Context, input dto.CreatePaymentInput) (dto.PaymentOutput, error)
 	GetPaymentsByOrder(ctx context.Context, orderID uuid.UUID) ([]dto.PaymentOutput, error)
+	ListPayments(ctx context.Context) ([]dto.PaymentOutput, error)
 	UpdatePaymentStatus(ctx context.Context, input dto.UpdatePaymentStatusInput) (dto.PaymentOutput, error)
 }
 
@@ -64,6 +65,16 @@ func (h *PaymentHandler) GetByOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	out, err := h.useCase.GetPaymentsByOrder(r.Context(), orderID)
+	if err != nil {
+		responses.WriteError(w, err)
+		return
+	}
+	responses.WriteJSON(w, http.StatusOK, out)
+}
+
+func (h *PaymentHandler) List(w http.ResponseWriter, r *http.Request) {
+	noCache(w)
+	out, err := h.useCase.ListPayments(r.Context())
 	if err != nil {
 		responses.WriteError(w, err)
 		return

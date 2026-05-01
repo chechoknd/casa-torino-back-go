@@ -91,6 +91,7 @@ type RecipeRepository struct {
 	AddItemFn         func(context.Context, uuid.UUID, *entities.RecipeItem) error
 	FindByIDFn        func(context.Context, uuid.UUID) (*entities.Recipe, error)
 	FindByProductIDFn func(context.Context, uuid.UUID) (*entities.Recipe, error)
+	ListFn            func(context.Context) ([]entities.Recipe, error)
 }
 
 func (m *RecipeRepository) Create(ctx context.Context, recipe *entities.Recipe) error {
@@ -107,6 +108,9 @@ func (m *RecipeRepository) FindByID(ctx context.Context, id uuid.UUID) (*entitie
 }
 func (m *RecipeRepository) FindByProductID(ctx context.Context, productID uuid.UUID) (*entities.Recipe, error) {
 	return m.FindByProductIDFn(ctx, productID)
+}
+func (m *RecipeRepository) List(ctx context.Context) ([]entities.Recipe, error) {
+	return m.ListFn(ctx)
 }
 
 type OrderRepository struct {
@@ -141,6 +145,7 @@ type PaymentRepository struct {
 	CreateFn        func(context.Context, *entities.Payment) error
 	UpdateFn        func(context.Context, *entities.Payment) error
 	FindByIDFn      func(context.Context, uuid.UUID) (*entities.Payment, error)
+	ListFn          func(context.Context) ([]entities.Payment, error)
 	ListByOrderIDFn func(context.Context, uuid.UUID) ([]entities.Payment, error)
 }
 
@@ -152,6 +157,9 @@ func (m *PaymentRepository) Update(ctx context.Context, payment *entities.Paymen
 }
 func (m *PaymentRepository) FindByID(ctx context.Context, id uuid.UUID) (*entities.Payment, error) {
 	return m.FindByIDFn(ctx, id)
+}
+func (m *PaymentRepository) List(ctx context.Context) ([]entities.Payment, error) {
+	return m.ListFn(ctx)
 }
 func (m *PaymentRepository) ListByOrderID(ctx context.Context, orderID uuid.UUID) ([]entities.Payment, error) {
 	return m.ListByOrderIDFn(ctx, orderID)

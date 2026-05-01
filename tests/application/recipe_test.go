@@ -17,19 +17,23 @@ import (
 )
 
 func TestCreateRecipeSuccess(t *testing.T) {
+	productID := uuid.New()
 	pt, _ := valueobjects.NewProductType("LUNCH")
 	productRepo := &mocks.ProductRepository{
 		FindByIDFn: func(context.Context, uuid.UUID) (*entities.Product, error) {
-			return &entities.Product{ID: uuid.New(), ProductType: pt, IsActive: true}, nil
+			return &entities.Product{ID: productID, Name: "Bowl ejecutivo", ProductType: pt, IsActive: true}, nil
 		},
 	}
 	recipeRepo := &mocks.RecipeRepository{CreateFn: func(context.Context, *entities.Recipe) error { return nil }}
 	ingredientRepo := &mocks.IngredientRepository{}
 	uc := recipeuc.NewUseCase(recipeRepo, productRepo, ingredientRepo)
 
-	_, err := uc.CreateRecipe(context.Background(), dto.CreateRecipeInput{ProductID: uuid.New(), Name: "Receta", Portions: 2})
+	out, err := uc.CreateRecipe(context.Background(), dto.CreateRecipeInput{ProductID: productID, Name: "Receta", Portions: 2})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+	if out.ProductName != "Bowl ejecutivo" {
+		t.Fatalf("unexpected product name: %s", out.ProductName)
 	}
 }
 
@@ -67,5 +71,29 @@ func TestCalculateRecipeCostSuccess(t *testing.T) {
 	}
 	if !out.Cost.Equal(decimal.RequireFromString("7000")) {
 		t.Fatalf("unexpected cost: %s", out.Cost)
+	}
+}
+
+func TestListRecipesIncludesProductName(t *testing.T) {
+	productID := uuid.New()
+	recipeRepo := &mocks.RecipeRepository{
+		ListFn: func(context.Context) ([]entities.Recipe, error) {
+			return []entities.Recipe{{ID: uuid.New(), ProductID: productID, Name: "Receta del dia", Portions: 2, IsActive: true}}, nil
+		},
+	}
+	productType, _ := valueobjects.NewProductType("LUNCH")
+	productRepo := &mocks.ProductRepository{
+		FindByIDFn: func(context.Context, uuid.UUID) (*entities.Product, error) {
+			return &entities.Product{ID: productID, Name: "Almuerzo casero", ProductType: productType, IsActive: true}, nil
+		},
+	}
+
+	uc := recipeuc.NewUseCase(recipeRepo, productRepo, &mocks.IngredientRepository{})
+	out, err := uc.ListRecipes(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(out) != 1 || out[0].ProductName != "Almuerzo casero" {
+		t.Fatalf("unexpected output: %+v", out)
 	}
 }

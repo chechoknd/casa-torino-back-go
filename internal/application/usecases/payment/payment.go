@@ -2,6 +2,7 @@ package payment
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -17,12 +18,14 @@ import (
 type UseCase struct {
 	payments repositories.PaymentRepository
 	orders   repositories.OrderRepository
+	products repositories.ProductRepository
 }
 
-func NewUseCase(payments repositories.PaymentRepository, orders repositories.OrderRepository) *UseCase {
+func NewUseCase(payments repositories.PaymentRepository, orders repositories.OrderRepository, products repositories.ProductRepository) *UseCase {
 	return &UseCase{
 		payments: payments,
 		orders:   orders,
+		products: products,
 	}
 }
 
@@ -59,7 +62,7 @@ func (uc *UseCase) CreatePayment(ctx context.Context, input dto.CreatePaymentInp
 		return dto.PaymentOutput{}, err
 	}
 
-	return toPaymentOutput(*payment), nil
+	return uc.toPaymentOutput(ctx, *payment)
 }
 
 func (uc *UseCase) GetPaymentsByOrder(ctx context.Context, orderID uuid.UUID) ([]dto.PaymentOutput, error) {
@@ -74,7 +77,29 @@ func (uc *UseCase) GetPaymentsByOrder(ctx context.Context, orderID uuid.UUID) ([
 
 	output := make([]dto.PaymentOutput, 0, len(payments))
 	for _, payment := range payments {
-		output = append(output, toPaymentOutput(payment))
+		mapped, err := uc.toPaymentOutput(ctx, payment)
+		if err != nil {
+			return nil, err
+		}
+		output = append(output, mapped)
+	}
+
+	return output, nil
+}
+
+func (uc *UseCase) ListPayments(ctx context.Context) ([]dto.PaymentOutput, error) {
+	payments, err := uc.payments.List(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	output := make([]dto.PaymentOutput, 0, len(payments))
+	for _, payment := range payments {
+		mapped, err := uc.toPaymentOutput(ctx, payment)
+		if err != nil {
+			return nil, err
+		}
+		output = append(output, mapped)
 	}
 
 	return output, nil
@@ -98,17 +123,40 @@ func (uc *UseCase) UpdatePaymentStatus(ctx context.Context, input dto.UpdatePaym
 		return dto.PaymentOutput{}, err
 	}
 
-	return toPaymentOutput(*payment), nil
+	return uc.toPaymentOutput(ctx, *payment)
 }
 
-func toPaymentOutput(payment entities.Payment) dto.PaymentOutput {
-	return dto.PaymentOutput{
-		ID:        payment.ID,
-		OrderID:   payment.OrderID,
-		Amount:    payment.Amount,
-		Method:    string(payment.Method),
-		Status:    string(payment.Status),
-		CreatedAt: payment.CreatedAt,
-		UpdatedAt: payment.UpdatedAt,
+func (uc *UseCase) toPaymentOutput(ctx context.Context, payment entities.Payment) (dto.PaymentOutput, error) {
+	order, err := uc.orders.FindByID(ctx, payment.OrderID)
+	if err != nil {
+		return dto.PaymentOutput{}, err
 	}
+
+	products := make([]dto.PaymentProductOutput, 0, len(order.Items))
+	for _, item := range order.Items {
+		productName := ""
+		product, err := uc.products.FindByID(ctx, item.ProductID)
+		if err == nil {
+			productName = product.Name
+		}
+
+		products = append(products, dto.PaymentProductOutput{
+			ProductID:   item.ProductID,
+			ProductName: productName,
+			Quantity:    item.Quantity,
+		})
+	}
+
+	return dto.PaymentOutput{
+		ID:          payment.ID,
+		OrderID:     payment.OrderID,
+		OrderNumber: order.OrderNumber,
+		OrderLabel:  fmt.Sprintf("#%04d", order.OrderNumber),
+		Amount:      payment.Amount,
+		Method:      string(payment.Method),
+		Status:      string(payment.Status),
+		Products:    products,
+		CreatedAt:   payment.CreatedAt,
+		UpdatedAt:   payment.UpdatedAt,
+	}, nil
 }

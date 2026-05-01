@@ -14,4 +14,5 @@ type RecipeRepository interface {
 	AddItem(ctx context.Context, recipeID uuid.UUID, item *entities.RecipeItem) error
 	FindByID(ctx context.Context, id uuid.UUID) (*entities.Recipe, error)
 	FindByProductID(ctx context.Context, productID uuid.UUID) (*entities.Recipe, error)
+	List(ctx context.Context) ([]entities.Recipe, error)
 }

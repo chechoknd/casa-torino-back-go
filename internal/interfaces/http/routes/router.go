@@ -55,6 +55,7 @@ func NewRouter(deps Dependencies) http.Handler {
 
 	router.Route("/recipes", func(r chi.Router) {
 		r.Post("/", deps.Recipes.Create)
+		r.Get("/", deps.Recipes.List)
 		r.Post("/{id}/items", deps.Recipes.AddItem)
 		r.Get("/product/{product_id}", deps.Recipes.GetByProduct)
 		r.Get("/{id}/cost", deps.Recipes.GetCost)
@@ -70,6 +71,7 @@ func NewRouter(deps Dependencies) http.Handler {
 	})
 
 	router.Route("/payments", func(r chi.Router) {
+		r.Get("/", deps.Payments.List)
 		r.Post("/", deps.Payments.Create)
 		r.Patch("/{id}/status", deps.Payments.UpdateStatus)
 	})
