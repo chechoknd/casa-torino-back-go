@@ -234,7 +234,6 @@ func TestIngredientEndpointsErrors(t *testing.T) {
 
 func ingredientTestRouter(useCase fakeIngredientUseCase) http.Handler {
 	return routes.NewRouter(routes.Dependencies{
-		Health:      handlers.NewHealthHandler(),
 		Customers:   handlers.NewCustomerHandler(nil),
 		Products:    handlers.NewProductHandler(nil),
 		Ingredients: handlers.NewIngredientHandler(useCase),

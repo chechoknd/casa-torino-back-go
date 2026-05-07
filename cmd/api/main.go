@@ -51,7 +51,6 @@ func main() {
 	paymentUseCase := paymentuc.NewUseCase(paymentRepo, orderRepo, productRepo)
 
 	router := routes.NewRouter(routes.Dependencies{
-		Health:      handlers.NewHealthHandler(),
 		Customers:   handlers.NewCustomerHandler(customerUseCase),
 		Products:    handlers.NewProductHandler(productUseCase),
 		Ingredients: handlers.NewIngredientHandler(ingredientUseCase),

@@ -19,15 +19,7 @@ Backend en Go para Casa Torino, organizado con arquitectura hexagonal/limpia y p
 make run
 ```
 
-El servicio expone:
-
-- `GET /health`
-
-Respuesta esperada:
-
-```json
-{"status":"ok"}
-```
+El servicio expone la API de clientes, productos, ingredientes, recetas, ordenes y pagos.
 
 ## Otros comandos
 

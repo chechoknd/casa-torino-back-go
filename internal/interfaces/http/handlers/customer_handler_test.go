@@ -243,7 +243,6 @@ func TestCustomerEndpointsErrors(t *testing.T) {
 
 func customerTestRouter(useCase fakeCustomerUseCase) http.Handler {
 	return routes.NewRouter(routes.Dependencies{
-		Health:      handlers.NewHealthHandler(),
 		Customers:   handlers.NewCustomerHandler(useCase),
 		Products:    handlers.NewProductHandler(nil),
 		Ingredients: handlers.NewIngredientHandler(nil),
