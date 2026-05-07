@@ -30,6 +30,7 @@ func NewCustomerHandler(useCase CustomerHandlerUseCase) *CustomerHandler {
 
 func (h *CustomerHandler) Create(w http.ResponseWriter, r *http.Request) {
 	noCache(w)
+	defer r.Body.Close()
 	var req requests.CreateCustomerRequest
 	if err := requests.DecodeJSON(r, &req); err != nil {
 		responses.WriteError(w, err)
@@ -77,6 +78,7 @@ func (h *CustomerHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 func (h *CustomerHandler) Update(w http.ResponseWriter, r *http.Request) {
 	noCache(w)
+	defer r.Body.Close()
 	id, err := requests.ParseUUID(chi.URLParam(r, "id"))
 	if err != nil {
 		responses.WriteError(w, err)

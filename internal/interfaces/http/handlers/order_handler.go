@@ -30,6 +30,7 @@ func NewOrderHandler(useCase OrderHandlerUseCase) *OrderHandler {
 
 func (h *OrderHandler) Create(w http.ResponseWriter, r *http.Request) {
 	noCache(w)
+	defer r.Body.Close()
 	var req requests.CreateOrderRequest
 	if err := requests.DecodeJSON(r, &req); err != nil {
 		responses.WriteError(w, err)
@@ -92,6 +93,7 @@ func (h *OrderHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 func (h *OrderHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 	noCache(w)
+	defer r.Body.Close()
 	orderID, err := requests.ParseUUID(chi.URLParam(r, "id"))
 	if err != nil {
 		responses.WriteError(w, err)
@@ -121,6 +123,7 @@ func (h *OrderHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 
 func (h *OrderHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 	noCache(w)
+	defer r.Body.Close()
 	orderID, err := requests.ParseUUID(chi.URLParam(r, "id"))
 	if err != nil {
 		responses.WriteError(w, err)

@@ -30,6 +30,7 @@ func NewRecipeHandler(useCase RecipeHandlerUseCase) *RecipeHandler {
 
 func (h *RecipeHandler) Create(w http.ResponseWriter, r *http.Request) {
 	noCache(w)
+	defer r.Body.Close()
 	var req requests.CreateRecipeRequest
 	if err := requests.DecodeJSON(r, &req); err != nil {
 		responses.WriteError(w, err)
@@ -54,6 +55,7 @@ func (h *RecipeHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 func (h *RecipeHandler) AddItem(w http.ResponseWriter, r *http.Request) {
 	noCache(w)
+	defer r.Body.Close()
 	recipeID, err := requests.ParseUUID(chi.URLParam(r, "id"))
 	if err != nil {
 		responses.WriteError(w, err)

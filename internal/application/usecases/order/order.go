@@ -150,6 +150,9 @@ func (uc *UseCase) GetOrder(ctx context.Context, id uuid.UUID) (dto.OrderOutput,
 	if err != nil {
 		return dto.OrderOutput{}, err
 	}
+	if order == nil {
+		return dto.OrderOutput{}, domainerrors.ErrNotFound
+	}
 	return uc.toOrderOutput(ctx, *order)
 }
 

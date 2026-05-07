@@ -112,7 +112,7 @@ func (uc *UseCase) GetRecipeByProduct(ctx context.Context, productID uuid.UUID) 
 	if err != nil {
 		return dto.RecipeOutput{}, err
 	}
-	if !recipe.IsActive {
+	if recipe == nil || !recipe.IsActive {
 		return dto.RecipeOutput{}, domainerrors.ErrInactive
 	}
 
@@ -142,6 +142,9 @@ func (uc *UseCase) CalculateRecipeCost(ctx context.Context, productID uuid.UUID)
 	if err != nil {
 		return dto.RecipeCostOutput{}, err
 	}
+	if recipe == nil {
+		return dto.RecipeCostOutput{}, domainerrors.ErrNotFound
+	}
 
 	return uc.calculateRecipeCost(ctx, recipe)
 }
@@ -150,6 +153,9 @@ func (uc *UseCase) GetRecipeCost(ctx context.Context, recipeID uuid.UUID) (dto.R
 	recipe, err := uc.recipes.FindByID(ctx, recipeID)
 	if err != nil {
 		return dto.RecipeCostOutput{}, err
+	}
+	if recipe == nil {
+		return dto.RecipeCostOutput{}, domainerrors.ErrNotFound
 	}
 
 	return uc.calculateRecipeCost(ctx, recipe)
