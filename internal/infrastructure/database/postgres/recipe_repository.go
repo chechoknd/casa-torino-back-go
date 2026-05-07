@@ -8,6 +8,7 @@ import (
 
 	"github.com/casatorino/backend/internal/domain/entities"
 	domainrepositories "github.com/casatorino/backend/internal/domain/repositories"
+	"github.com/casatorino/backend/internal/domain/valueobjects"
 	sqlcdb "github.com/casatorino/backend/internal/infrastructure/database/sqlc"
 )
 
@@ -141,11 +142,16 @@ func (r *RecipeRepository) AddItem(ctx context.Context, recipeID uuid.UUID, item
 		return mapError(err)
 	}
 
+	unit, err := valueobjects.NewUnit(row.Unit)
+	if err != nil {
+		return err
+	}
+
 	item.ID = row.ID
 	item.RecipeID = row.RecipeID
 	item.IngredientID = row.IngredientID
 	item.Quantity = row.Quantity
-	item.Unit = item.Unit
+	item.Unit = unit
 
 	return nil
 }
