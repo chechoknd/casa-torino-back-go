@@ -110,6 +110,9 @@ func (uc *UseCase) UpdatePaymentStatus(ctx context.Context, input dto.UpdatePaym
 	if err != nil {
 		return dto.PaymentOutput{}, err
 	}
+	if payment == nil {
+		return dto.PaymentOutput{}, domainerrors.ErrNotFound
+	}
 
 	status, err := valueobjects.NewPaymentStatus(input.Status)
 	if err != nil {

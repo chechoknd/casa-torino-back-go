@@ -57,7 +57,7 @@ func (uc *UseCase) GetIngredient(ctx context.Context, id uuid.UUID) (dto.Ingredi
 	if err != nil {
 		return dto.IngredientOutput{}, err
 	}
-	if !ingredient.IsActive {
+	if ingredient == nil || !ingredient.IsActive {
 		return dto.IngredientOutput{}, domainerrors.ErrInactive
 	}
 
@@ -117,7 +117,7 @@ func (uc *UseCase) DeactivateIngredient(ctx context.Context, id uuid.UUID) error
 	if err != nil {
 		return err
 	}
-	if !ingredient.IsActive {
+	if ingredient == nil || !ingredient.IsActive {
 		return domainerrors.ErrInactive
 	}
 

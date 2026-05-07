@@ -24,13 +24,13 @@ func NewUseCase(customers repositories.CustomerRepository) *UseCase {
 }
 
 func (uc *UseCase) CreateCustomer(ctx context.Context, input dto.CreateCustomerInput) (dto.CustomerOutput, error) {
-	if strings.TrimSpace(input.FullName) == "" || strings.TrimSpace(input.Email) == "" || strings.TrimSpace(input.Phone) == "" {
-		return dto.CustomerOutput{}, domainerrors.ErrInvalidInput
-	}
-
 	customerType, err := valueobjects.NewCustomerType(input.CustomerType)
 	if err != nil {
 		return dto.CustomerOutput{}, err
+	}
+
+	if strings.TrimSpace(input.FullName) == "" || strings.TrimSpace(input.Email) == "" || strings.TrimSpace(input.Phone) == "" {
+		return dto.CustomerOutput{}, domainerrors.ErrInvalidInput
 	}
 
 	existing, err := uc.customers.FindByEmail(ctx, input.Email)
@@ -65,7 +65,7 @@ func (uc *UseCase) GetCustomer(ctx context.Context, id uuid.UUID) (dto.CustomerO
 	if err != nil {
 		return dto.CustomerOutput{}, err
 	}
-	if !customer.IsActive {
+	if customer == nil || !customer.IsActive {
 		return dto.CustomerOutput{}, domainerrors.ErrInactive
 	}
 
@@ -111,15 +111,15 @@ func (uc *UseCase) UpdateCustomer(ctx context.Context, input dto.UpdateCustomerI
 		return dto.CustomerOutput{}, domainerrors.ErrDuplicateEmail
 	}
 
+	if strings.TrimSpace(input.FullName) == "" || strings.TrimSpace(input.Phone) == "" || strings.TrimSpace(input.Email) == "" {
+		return dto.CustomerOutput{}, domainerrors.ErrInvalidInput
+	}
+
 	customer.FullName = strings.TrimSpace(input.FullName)
 	customer.Phone = strings.TrimSpace(input.Phone)
 	customer.Email = strings.TrimSpace(strings.ToLower(input.Email))
 	customer.CustomerType = customerType
 	customer.UpdatedAt = time.Now().UTC()
-
-	if customer.FullName == "" || customer.Phone == "" || customer.Email == "" {
-		return dto.CustomerOutput{}, domainerrors.ErrInvalidInput
-	}
 
 	if err := uc.customers.Update(ctx, customer); err != nil {
 		return dto.CustomerOutput{}, err
@@ -133,7 +133,7 @@ func (uc *UseCase) DeactivateCustomer(ctx context.Context, id uuid.UUID) error {
 	if err != nil {
 		return err
 	}
-	if !customer.IsActive {
+	if customer == nil || !customer.IsActive {
 		return domainerrors.ErrInactive
 	}
 

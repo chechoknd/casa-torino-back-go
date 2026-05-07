@@ -57,7 +57,7 @@ func (uc *UseCase) GetProduct(ctx context.Context, id uuid.UUID) (dto.ProductOut
 	if err != nil {
 		return dto.ProductOutput{}, err
 	}
-	if !product.IsActive {
+	if product == nil || !product.IsActive {
 		return dto.ProductOutput{}, domainerrors.ErrInactive
 	}
 	return toProductOutput(*product), nil
@@ -127,7 +127,7 @@ func (uc *UseCase) DeactivateProduct(ctx context.Context, id uuid.UUID) error {
 	if err != nil {
 		return err
 	}
-	if !product.IsActive {
+	if product == nil || !product.IsActive {
 		return domainerrors.ErrInactive
 	}
 
