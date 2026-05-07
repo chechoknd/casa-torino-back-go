@@ -24,30 +24,19 @@ Error:
 
 ## Recommended Order
 
-1. `GET /health`
-2. `POST /customers`
-3. `POST /products`
-4. `POST /ingredients`
-5. `POST /recipes`
-6. `POST /recipes/{id}/items`
-7. `GET /recipes/product/{product_id}`
-8. `GET /recipes/{id}/cost`
-9. `POST /orders`
-10. `POST /orders/{id}/items`
-11. `PATCH /orders/{id}/status`
-12. `POST /payments`
-13. `GET /orders/{id}/payments`
-14. `DELETE` endpoints
-
-## Health
-
-### GET `/health`
-
-Expected:
-
-```json
-{"status":"ok"}
-```
+1. `POST /customers`
+2. `POST /products`
+3. `POST /ingredients`
+4. `POST /recipes`
+5. `POST /recipes/{id}/items`
+6. `GET /recipes/product/{product_id}`
+7. `GET /recipes/{id}/cost`
+8. `POST /orders`
+9. `POST /orders/{id}/items`
+10. `PATCH /orders/{id}/status`
+11. `POST /payments`
+12. `GET /orders/{id}/payments`
+13. `DELETE` endpoints
 
 ## Customers
 

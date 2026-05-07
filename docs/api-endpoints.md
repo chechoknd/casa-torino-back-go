@@ -6,11 +6,6 @@ Base URL local:
 http://localhost:8080
 ```
 
-## Health
-
-- `GET http://localhost:8080/health`
-- `POST http://localhost:8080/health`
-
 ## Customers
 
 - `POST http://localhost:8080/customers`

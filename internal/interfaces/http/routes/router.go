@@ -10,7 +10,6 @@ import (
 )
 
 type Dependencies struct {
-	Health      *handlers.HealthHandler
 	Customers   *handlers.CustomerHandler
 	Products    *handlers.ProductHandler
 	Ingredients *handlers.IngredientHandler
@@ -25,9 +24,6 @@ func NewRouter(deps Dependencies) http.Handler {
 	router.Use(appmiddleware.ContentType)
 	router.Use(appmiddleware.Logger)
 	router.Use(appmiddleware.Recoverer)
-
-	router.Get("/health", deps.Health.Check)
-	router.Post("/health", deps.Health.Check)
 
 	router.Route("/customers", func(r chi.Router) {
 		r.Post("/", deps.Customers.Create)
