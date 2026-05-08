@@ -10,6 +10,7 @@ import (
 )
 
 type Dependencies struct {
+	Auth        *handlers.AuthHandler
 	Customers   *handlers.CustomerHandler
 	Products    *handlers.ProductHandler
 	Ingredients *handlers.IngredientHandler
@@ -18,6 +19,7 @@ type Dependencies struct {
 	Payments    *handlers.PaymentHandler
 
 	CORSAllowedOrigins []string
+	TokenVerifier      appmiddleware.TokenVerifier
 }
 
 func NewRouter(deps Dependencies) http.Handler {
@@ -28,7 +30,19 @@ func NewRouter(deps Dependencies) http.Handler {
 	router.Use(appmiddleware.Logger)
 	router.Use(appmiddleware.Recoverer)
 
-	router.Route("/customers", func(r chi.Router) {
+	if deps.Auth != nil {
+		router.Route("/auth", func(r chi.Router) {
+			r.Post("/register", deps.Auth.Register)
+			r.Post("/login", deps.Auth.Login)
+		})
+	}
+
+	protected := chi.NewRouter()
+	if deps.TokenVerifier != nil {
+		protected.Use(appmiddleware.JWTAuth(deps.TokenVerifier))
+	}
+
+	protected.Route("/customers", func(r chi.Router) {
 		r.Post("/", deps.Customers.Create)
 		r.Get("/", deps.Customers.List)
 		r.Get("/{id}", deps.Customers.Get)
@@ -36,7 +50,7 @@ func NewRouter(deps Dependencies) http.Handler {
 		r.Delete("/{id}", deps.Customers.Delete)
 	})
 
-	router.Route("/products", func(r chi.Router) {
+	protected.Route("/products", func(r chi.Router) {
 		r.Post("/", deps.Products.Create)
 		r.Get("/", deps.Products.List)
 		r.Get("/{id}", deps.Products.Get)
@@ -44,7 +58,7 @@ func NewRouter(deps Dependencies) http.Handler {
 		r.Delete("/{id}", deps.Products.Delete)
 	})
 
-	router.Route("/ingredients", func(r chi.Router) {
+	protected.Route("/ingredients", func(r chi.Router) {
 		r.Post("/", deps.Ingredients.Create)
 		r.Get("/", deps.Ingredients.List)
 		r.Get("/{id}", deps.Ingredients.Get)
@@ -52,7 +66,7 @@ func NewRouter(deps Dependencies) http.Handler {
 		r.Delete("/{id}", deps.Ingredients.Delete)
 	})
 
-	router.Route("/recipes", func(r chi.Router) {
+	protected.Route("/recipes", func(r chi.Router) {
 		r.Post("/", deps.Recipes.Create)
 		r.Get("/", deps.Recipes.List)
 		r.Post("/{id}/items", deps.Recipes.AddItem)
@@ -60,7 +74,7 @@ func NewRouter(deps Dependencies) http.Handler {
 		r.Get("/{id}/cost", deps.Recipes.GetCost)
 	})
 
-	router.Route("/orders", func(r chi.Router) {
+	protected.Route("/orders", func(r chi.Router) {
 		r.Post("/", deps.Orders.Create)
 		r.Get("/", deps.Orders.List)
 		r.Get("/{id}", deps.Orders.Get)
@@ -69,11 +83,13 @@ func NewRouter(deps Dependencies) http.Handler {
 		r.Get("/{id}/payments", deps.Payments.GetByOrder)
 	})
 
-	router.Route("/payments", func(r chi.Router) {
+	protected.Route("/payments", func(r chi.Router) {
 		r.Get("/", deps.Payments.List)
 		r.Post("/", deps.Payments.Create)
 		r.Patch("/{id}/status", deps.Payments.UpdateStatus)
 	})
+
+	router.Mount("/", protected)
 
 	return router
 }

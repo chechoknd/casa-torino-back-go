@@ -53,6 +53,18 @@ func WriteError(w http.ResponseWriter, err error) {
 		status = http.StatusConflict
 		code = "DUPLICATE_EMAIL"
 		message = "email already exists"
+	case errors.Is(err, domainerrors.ErrDuplicateUsername):
+		status = http.StatusConflict
+		code = "DUPLICATE_USERNAME"
+		message = "username already exists"
+	case errors.Is(err, domainerrors.ErrInvalidCredentials):
+		status = http.StatusUnauthorized
+		code = "INVALID_CREDENTIALS"
+		message = "invalid credentials"
+	case errors.Is(err, domainerrors.ErrUnauthorized):
+		status = http.StatusUnauthorized
+		code = "UNAUTHORIZED"
+		message = "unauthorized"
 	}
 
 	w.Header().Set("Content-Type", "application/json")

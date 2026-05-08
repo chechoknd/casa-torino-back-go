@@ -11,7 +11,7 @@ Backend en Go para Casa Torino, organizado con arquitectura hexagonal/limpia y p
 ## Configuración
 
 1. Copia `.env.example` a `.env`
-2. Ajusta `DATABASE_URL` y `FRONTEND_URL` según tu entorno
+2. Ajusta `DATABASE_URL`, `FRONTEND_URL` y `JWT_SECRET` según tu entorno
 
 ## Arranque
 
@@ -33,6 +33,28 @@ make migrate-down
 
 `DATABASE_URL` se usa para el backend dentro de Docker. `MIGRATIONS_DATABASE_URL` se usa desde tu host para `make migrate-up` y `make migrate-down`.
 `FRONTEND_URL` define el origen permitido por CORS para el frontend desplegado; `http://localhost:4200` también queda permitido para desarrollo local.
+`JWT_SECRET`, `JWT_EXPIRES_IN`, `REFRESH_TOKEN_EXPIRES` y `BCRYPT_COST` configuran autenticación y seguridad.
+
+## Autenticación
+
+```bash
+curl -X POST http://localhost:8080/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@example.com","username":"admin","full_name":"Admin User","password":"Password123"}'
+
+curl -X POST http://localhost:8080/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email_or_username":"admin@example.com","password":"Password123"}'
+```
+
+`/auth/login` tambien acepta `email` o `username` como alternativa a `email_or_username`.
+
+Usa el token retornado en rutas privadas:
+
+```bash
+curl http://localhost:8080/products/ \
+  -H "Authorization: Bearer <access_token>"
+```
 
 ## Notas
 

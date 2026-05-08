@@ -18,6 +18,26 @@ type CustomerRepository struct {
 	ListFn        func(context.Context) ([]entities.Customer, error)
 }
 
+type UserRepository struct {
+	CreateFn         func(context.Context, *entities.User) error
+	FindByIDFn       func(context.Context, uuid.UUID) (*entities.User, error)
+	FindByEmailFn    func(context.Context, string) (*entities.User, error)
+	FindByUsernameFn func(context.Context, string) (*entities.User, error)
+}
+
+func (m *UserRepository) Create(ctx context.Context, user *entities.User) error {
+	return m.CreateFn(ctx, user)
+}
+func (m *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (*entities.User, error) {
+	return m.FindByIDFn(ctx, id)
+}
+func (m *UserRepository) FindByEmail(ctx context.Context, email string) (*entities.User, error) {
+	return m.FindByEmailFn(ctx, email)
+}
+func (m *UserRepository) FindByUsername(ctx context.Context, username string) (*entities.User, error) {
+	return m.FindByUsernameFn(ctx, username)
+}
+
 func (m *CustomerRepository) Create(ctx context.Context, customer *entities.Customer) error {
 	return m.CreateFn(ctx, customer)
 }

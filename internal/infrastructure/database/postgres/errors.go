@@ -22,6 +22,9 @@ func mapError(err error) error {
 	if errors.As(err, &pgErr) {
 		switch pgErr.Code {
 		case "23505":
+			if pgErr.ConstraintName == "idx_users_username_unique" {
+				return domainerrors.ErrDuplicateUsername
+			}
 			return domainerrors.ErrDuplicateEmail
 		case "23503":
 			return domainerrors.ErrInvalidInput

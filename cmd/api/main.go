@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	authuc "github.com/casatorino/backend/internal/application/usecases/auth"
 	customeruc "github.com/casatorino/backend/internal/application/usecases/customer"
 	ingredientuc "github.com/casatorino/backend/internal/application/usecases/ingredient"
 	orderuc "github.com/casatorino/backend/internal/application/usecases/order"
@@ -17,9 +18,29 @@ import (
 	recipeuc "github.com/casatorino/backend/internal/application/usecases/recipe"
 	"github.com/casatorino/backend/internal/infrastructure/config"
 	"github.com/casatorino/backend/internal/infrastructure/database/postgres"
+	"github.com/casatorino/backend/internal/infrastructure/security"
 	"github.com/casatorino/backend/internal/interfaces/http/handlers"
+	appmiddleware "github.com/casatorino/backend/internal/interfaces/http/middleware"
 	"github.com/casatorino/backend/internal/interfaces/http/routes"
 )
+
+type tokenVerifierAdapter struct {
+	manager *security.JWTManager
+}
+
+func (a tokenVerifierAdapter) Verify(ctx context.Context, token string) (appmiddleware.TokenClaims, error) {
+	claims, err := a.manager.Verify(ctx, token)
+	if err != nil {
+		return appmiddleware.TokenClaims{}, err
+	}
+
+	return appmiddleware.TokenClaims{
+		UserID:    claims.UserID,
+		Email:     claims.Email,
+		Username:  claims.Username,
+		ExpiresAt: claims.ExpiresAt,
+	}, nil
+}
 
 func main() {
 	cfg, err := config.Load()
@@ -37,12 +58,16 @@ func main() {
 	defer conn.Close()
 
 	customerRepo := postgres.NewCustomerRepository(conn)
+	userRepo := postgres.NewUserRepository(conn)
 	productRepo := postgres.NewProductRepository(conn)
 	ingredientRepo := postgres.NewIngredientRepository(conn)
 	recipeRepo := postgres.NewRecipeRepository(conn)
 	orderRepo := postgres.NewOrderRepository(conn)
 	paymentRepo := postgres.NewPaymentRepository(conn)
 
+	passwordHasher := security.NewBcryptHasher(cfg.BcryptCost)
+	jwtManager := security.NewJWTManager(cfg.JWTSecret, cfg.JWTExpiresIn)
+	authUseCase := authuc.NewUseCase(userRepo, passwordHasher, jwtManager)
 	customerUseCase := customeruc.NewUseCase(customerRepo)
 	productUseCase := productuc.NewUseCase(productRepo)
 	ingredientUseCase := ingredientuc.NewUseCase(ingredientRepo)
@@ -51,6 +76,7 @@ func main() {
 	paymentUseCase := paymentuc.NewUseCase(paymentRepo, orderRepo, productRepo)
 
 	router := routes.NewRouter(routes.Dependencies{
+		Auth:        handlers.NewAuthHandler(authUseCase),
 		Customers:   handlers.NewCustomerHandler(customerUseCase),
 		Products:    handlers.NewProductHandler(productUseCase),
 		Ingredients: handlers.NewIngredientHandler(ingredientUseCase),
@@ -61,6 +87,7 @@ func main() {
 			cfg.FrontendURL,
 			"http://localhost:4200",
 		},
+		TokenVerifier: tokenVerifierAdapter{manager: jwtManager},
 	})
 
 	server := &http.Server{
