@@ -156,6 +156,127 @@ func TestLoginReturnsAccessToken(t *testing.T) {
 	}
 }
 
+func TestLoginCreatesRefreshToken(t *testing.T) {
+	userID := uuid.New()
+	expiresAt := time.Date(2026, 5, 8, 12, 15, 0, 0, time.UTC)
+	var createdToken *entities.RefreshToken
+
+	repo := &mocks.UserRepository{
+		FindByEmailFn: func(context.Context, string) (*entities.User, error) {
+			return &entities.User{
+				ID:           userID,
+				Email:        "user@example.com",
+				Username:     "demo",
+				FullName:     "Demo User",
+				PasswordHash: "hashed-password",
+				IsActive:     true,
+			}, nil
+		},
+	}
+	refreshRepo := &mocks.RefreshTokenRepository{
+		CreateFn: func(_ context.Context, token *entities.RefreshToken) error {
+			createdToken = token
+			return nil
+		},
+	}
+	uc := NewUseCase(repo, fakeHasher{
+		hashFn:    func(string) (string, error) { return "", nil },
+		compareFn: func(string, string) error { return nil },
+	}, fakeTokenIssuer{
+		generateFn: func(context.Context, uuid.UUID, string, string) (string, time.Time, error) {
+			return "access-token", expiresAt, nil
+		},
+	}, refreshRepo)
+
+	out, err := uc.Login(context.Background(), dto.LoginInput{
+		EmailOrUsername: "user@example.com",
+		Password:        "Password123",
+	})
+	if err != nil {
+		t.Fatalf("Login error = %v", err)
+	}
+	if out.RefreshToken == "" {
+		t.Fatal("expected refresh token")
+	}
+	if createdToken == nil {
+		t.Fatal("expected refresh token to be stored")
+	}
+	if createdToken.UserID != userID || createdToken.TokenHash == "" || createdToken.TokenHash == out.RefreshToken {
+		t.Fatalf("unexpected stored refresh token: %+v", createdToken)
+	}
+}
+
+func TestRefreshRotatesRefreshToken(t *testing.T) {
+	userID := uuid.New()
+	tokenID := uuid.New()
+	oldRefreshToken := "old-refresh-token"
+	expiresAt := time.Date(2026, 5, 8, 12, 15, 0, 0, time.UTC)
+	var revokedTokenID uuid.UUID
+	var createdToken *entities.RefreshToken
+
+	userRepo := &mocks.UserRepository{
+		FindByIDFn: func(_ context.Context, id uuid.UUID) (*entities.User, error) {
+			if id != userID {
+				t.Fatalf("user id = %s, want %s", id, userID)
+			}
+			return &entities.User{
+				ID:       userID,
+				Email:    "user@example.com",
+				Username: "demo",
+				FullName: "Demo User",
+				IsActive: true,
+			}, nil
+		},
+	}
+	refreshRepo := &mocks.RefreshTokenRepository{
+		FindByTokenHashFn: func(_ context.Context, tokenHash string) (*entities.RefreshToken, error) {
+			if tokenHash != hashRefreshToken(oldRefreshToken) {
+				t.Fatalf("token hash = %q", tokenHash)
+			}
+			return &entities.RefreshToken{
+				ID:        tokenID,
+				UserID:    userID,
+				TokenHash: tokenHash,
+				CreatedAt: time.Now().UTC().Add(-time.Hour),
+				ExpiresAt: time.Now().UTC().Add(time.Hour),
+			}, nil
+		},
+		RevokeFn: func(_ context.Context, id uuid.UUID, revokedAt time.Time) error {
+			revokedTokenID = id
+			if revokedAt.IsZero() {
+				t.Fatal("expected revoked timestamp")
+			}
+			return nil
+		},
+		CreateFn: func(_ context.Context, token *entities.RefreshToken) error {
+			createdToken = token
+			return nil
+		},
+	}
+	uc := NewUseCase(userRepo, fakeHasher{}, fakeTokenIssuer{
+		generateFn: func(_ context.Context, id uuid.UUID, email, username string) (string, time.Time, error) {
+			if id != userID || email != "user@example.com" || username != "demo" {
+				t.Fatalf("unexpected access token input")
+			}
+			return "new-access-token", expiresAt, nil
+		},
+	}, refreshRepo)
+
+	out, err := uc.Refresh(context.Background(), dto.RefreshTokenInput{RefreshToken: oldRefreshToken})
+	if err != nil {
+		t.Fatalf("Refresh error = %v", err)
+	}
+	if revokedTokenID != tokenID {
+		t.Fatalf("revoked token id = %s, want %s", revokedTokenID, tokenID)
+	}
+	if createdToken == nil {
+		t.Fatal("expected rotated refresh token to be stored")
+	}
+	if out.AccessToken != "new-access-token" || out.RefreshToken == "" || out.RefreshToken == oldRefreshToken {
+		t.Fatalf("unexpected refresh output: %+v", out)
+	}
+}
+
 func TestLoginRejectsInvalidPassword(t *testing.T) {
 	repo := &mocks.UserRepository{
 		FindByUsernameFn: func(context.Context, string) (*entities.User, error) {

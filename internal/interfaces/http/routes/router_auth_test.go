@@ -28,6 +28,14 @@ func (fakeAuthUseCase) Login(context.Context, dto.LoginInput) (dto.AuthTokenOutp
 	return dto.AuthTokenOutput{}, nil
 }
 
+func (fakeAuthUseCase) Refresh(context.Context, dto.RefreshTokenInput) (dto.AuthTokenOutput, error) {
+	return dto.AuthTokenOutput{}, nil
+}
+
+func (fakeAuthUseCase) Logout(context.Context, dto.LogoutInput) error {
+	return nil
+}
+
 func TestRouterProtectsBusinessRoutesWhenVerifierConfigured(t *testing.T) {
 	router := NewRouter(Dependencies{
 		TokenVerifier: rejectingVerifier{},

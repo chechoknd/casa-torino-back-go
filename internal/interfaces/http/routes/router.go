@@ -46,6 +46,8 @@ func NewRouter(deps Dependencies) http.Handler {
 		router.Route("/auth", func(r chi.Router) {
 			r.Post("/register", deps.Auth.Register)
 			r.Post("/login", deps.Auth.Login)
+			r.Post("/refresh", deps.Auth.Refresh)
+			r.Post("/logout", deps.Auth.Logout)
 		})
 	}
 

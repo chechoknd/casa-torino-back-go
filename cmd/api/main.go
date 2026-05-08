@@ -59,6 +59,7 @@ func main() {
 
 	customerRepo := postgres.NewCustomerRepository(conn)
 	userRepo := postgres.NewUserRepository(conn)
+	refreshTokenRepo := postgres.NewRefreshTokenRepository(conn)
 	productRepo := postgres.NewProductRepository(conn)
 	ingredientRepo := postgres.NewIngredientRepository(conn)
 	recipeRepo := postgres.NewRecipeRepository(conn)
@@ -67,7 +68,7 @@ func main() {
 
 	passwordHasher := security.NewBcryptHasher(cfg.BcryptCost)
 	jwtManager := security.NewJWTManager(cfg.JWTSecret, cfg.JWTExpiresIn)
-	authUseCase := authuc.NewUseCase(userRepo, passwordHasher, jwtManager)
+	authUseCase := authuc.NewUseCase(userRepo, passwordHasher, jwtManager, refreshTokenRepo)
 	customerUseCase := customeruc.NewUseCase(customerRepo)
 	productUseCase := productuc.NewUseCase(productRepo)
 	ingredientUseCase := ingredientuc.NewUseCase(ingredientRepo)

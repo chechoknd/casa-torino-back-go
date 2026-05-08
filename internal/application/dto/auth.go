@@ -27,8 +27,17 @@ type AuthUserOutput struct {
 }
 
 type AuthTokenOutput struct {
-	AccessToken string         `json:"access_token"`
-	TokenType   string         `json:"token_type"`
-	ExpiresAt   time.Time      `json:"expires_at"`
-	User        AuthUserOutput `json:"user"`
+	AccessToken  string         `json:"access_token"`
+	RefreshToken string         `json:"refresh_token,omitempty"`
+	TokenType    string         `json:"token_type"`
+	ExpiresAt    time.Time      `json:"expires_at"`
+	User         AuthUserOutput `json:"user"`
+}
+
+type RefreshTokenInput struct {
+	RefreshToken string
+}
+
+type LogoutInput struct {
+	RefreshToken string
 }
