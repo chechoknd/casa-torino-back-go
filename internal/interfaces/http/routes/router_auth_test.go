@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/casatorino/backend/internal/application/dto"
@@ -55,5 +56,21 @@ func TestRouterKeepsAuthRoutesPublic(t *testing.T) {
 
 	if recorder.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want %d from public auth handler validation", recorder.Code, http.StatusBadRequest)
+	}
+}
+
+func TestRouterRejectsTooLargeRequestBody(t *testing.T) {
+	router := NewRouter(Dependencies{
+		Auth: handlers.NewAuthHandler(fakeAuthUseCase{}),
+	})
+
+	body := `{"email_or_username":"` + strings.Repeat("a", 1<<20) + `","password":"password123"}`
+	request := httptest.NewRequest(http.MethodPost, "/auth/login", strings.NewReader(body))
+	recorder := httptest.NewRecorder()
+
+	router.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusRequestEntityTooLarge)
 	}
 }
