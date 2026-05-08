@@ -16,11 +16,14 @@ type Dependencies struct {
 	Recipes     *handlers.RecipeHandler
 	Orders      *handlers.OrderHandler
 	Payments    *handlers.PaymentHandler
+
+	CORSAllowedOrigins []string
 }
 
 func NewRouter(deps Dependencies) http.Handler {
 	router := chi.NewRouter()
 	router.Use(appmiddleware.RequestID)
+	router.Use(appmiddleware.CORS(deps.CORSAllowedOrigins))
 	router.Use(appmiddleware.ContentType)
 	router.Use(appmiddleware.Logger)
 	router.Use(appmiddleware.Recoverer)

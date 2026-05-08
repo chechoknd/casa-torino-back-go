@@ -9,6 +9,7 @@ import (
 
 type Config struct {
 	DatabaseURL string
+	FrontendURL string
 	Port        string
 	Env         string
 }
@@ -18,6 +19,7 @@ func Load() (Config, error) {
 
 	cfg := Config{
 		DatabaseURL: os.Getenv("DATABASE_URL"),
+		FrontendURL: os.Getenv("FRONTEND_URL"),
 		Port:        getEnv("PORT", "8080"),
 		Env:         getEnv("ENV", "development"),
 	}

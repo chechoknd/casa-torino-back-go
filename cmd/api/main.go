@@ -57,6 +57,10 @@ func main() {
 		Recipes:     handlers.NewRecipeHandler(recipeUseCase),
 		Orders:      handlers.NewOrderHandler(orderUseCase),
 		Payments:    handlers.NewPaymentHandler(paymentUseCase),
+		CORSAllowedOrigins: []string{
+			cfg.FrontendURL,
+			"http://localhost:4200",
+		},
 	})
 
 	server := &http.Server{
