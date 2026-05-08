@@ -2,6 +2,7 @@ package routes
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -26,6 +27,10 @@ func NewRouter(deps Dependencies) http.Handler {
 	router := chi.NewRouter()
 	router.Use(appmiddleware.RequestID)
 	router.Use(appmiddleware.CORS(deps.CORSAllowedOrigins))
+	router.Use(appmiddleware.RateLimiter(
+		appmiddleware.RateLimit{Requests: 100, Window: time.Minute},
+		appmiddleware.WithRouteRateLimit("/auth/", appmiddleware.RateLimit{Requests: 5, Window: time.Minute}),
+	))
 	router.Use(appmiddleware.ContentType)
 	router.Use(appmiddleware.Logger)
 	router.Use(appmiddleware.Recoverer)
