@@ -93,7 +93,10 @@ func main() {
 	server := &http.Server{
 		Addr:              ":" + cfg.Port,
 		Handler:           router,
+		ReadTimeout:       15 * time.Second,
 		ReadHeaderTimeout: 5 * time.Second,
+		WriteTimeout:      15 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 
 	go func() {
