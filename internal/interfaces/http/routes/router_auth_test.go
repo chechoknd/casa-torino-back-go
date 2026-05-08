@@ -74,3 +74,21 @@ func TestRouterRejectsTooLargeRequestBody(t *testing.T) {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusRequestEntityTooLarge)
 	}
 }
+
+func TestRouterHealthIsPublic(t *testing.T) {
+	router := NewRouter(Dependencies{
+		TokenVerifier: rejectingVerifier{},
+	})
+
+	request := httptest.NewRequest(http.MethodGet, "/health", nil)
+	recorder := httptest.NewRecorder()
+
+	router.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
+	}
+	if body := recorder.Body.String(); body != `{"status":"ok"}` {
+		t.Fatalf("body = %q, want health status", body)
+	}
+}

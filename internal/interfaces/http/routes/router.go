@@ -37,6 +37,11 @@ func NewRouter(deps Dependencies) http.Handler {
 	router.Use(appmiddleware.Logger)
 	router.Use(appmiddleware.Recoverer)
 
+	router.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
+	})
+
 	if deps.Auth != nil {
 		router.Route("/auth", func(r chi.Router) {
 			r.Post("/register", deps.Auth.Register)
