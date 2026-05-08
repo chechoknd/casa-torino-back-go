@@ -27,6 +27,7 @@ func NewRouter(deps Dependencies) http.Handler {
 	router := chi.NewRouter()
 	router.Use(appmiddleware.RequestID)
 	router.Use(appmiddleware.CORS(deps.CORSAllowedOrigins))
+	router.Use(appmiddleware.SecurityHeaders)
 	router.Use(appmiddleware.MaxBodyBytes(1 << 20))
 	router.Use(appmiddleware.RateLimiter(
 		appmiddleware.RateLimit{Requests: 100, Window: time.Minute},
