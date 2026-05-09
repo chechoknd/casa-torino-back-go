@@ -12,6 +12,8 @@ import (
 type AuthHandlerUseCase interface {
 	Register(ctx context.Context, input dto.RegisterUserInput) (dto.AuthUserOutput, error)
 	Login(ctx context.Context, input dto.LoginInput) (dto.AuthTokenOutput, error)
+	Refresh(ctx context.Context, input dto.RefreshTokenInput) (dto.AuthTokenOutput, error)
+	Logout(ctx context.Context, input dto.LogoutInput) error
 }
 
 type AuthHandler struct {
@@ -73,4 +75,45 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responses.WriteJSON(w, http.StatusOK, out)
+}
+
+func (h *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
+	noCache(w)
+	defer r.Body.Close()
+
+	var req requests.RefreshTokenRequest
+	if err := requests.DecodeJSON(r, &req); err != nil {
+		responses.WriteError(w, err)
+		return
+	}
+
+	out, err := h.useCase.Refresh(r.Context(), dto.RefreshTokenInput{
+		RefreshToken: req.RefreshToken,
+	})
+	if err != nil {
+		responses.WriteError(w, err)
+		return
+	}
+
+	responses.WriteJSON(w, http.StatusOK, out)
+}
+
+func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	noCache(w)
+	defer r.Body.Close()
+
+	var req requests.LogoutRequest
+	if err := requests.DecodeJSON(r, &req); err != nil {
+		responses.WriteError(w, err)
+		return
+	}
+
+	if err := h.useCase.Logout(r.Context(), dto.LogoutInput{
+		RefreshToken: req.RefreshToken,
+	}); err != nil {
+		responses.WriteError(w, err)
+		return
+	}
+
+	responses.WriteJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }

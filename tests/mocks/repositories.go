@@ -25,6 +25,12 @@ type UserRepository struct {
 	FindByUsernameFn func(context.Context, string) (*entities.User, error)
 }
 
+type RefreshTokenRepository struct {
+	CreateFn          func(context.Context, *entities.RefreshToken) error
+	FindByTokenHashFn func(context.Context, string) (*entities.RefreshToken, error)
+	RevokeFn          func(context.Context, uuid.UUID, time.Time) error
+}
+
 func (m *UserRepository) Create(ctx context.Context, user *entities.User) error {
 	return m.CreateFn(ctx, user)
 }
@@ -36,6 +42,16 @@ func (m *UserRepository) FindByEmail(ctx context.Context, email string) (*entiti
 }
 func (m *UserRepository) FindByUsername(ctx context.Context, username string) (*entities.User, error) {
 	return m.FindByUsernameFn(ctx, username)
+}
+
+func (m *RefreshTokenRepository) Create(ctx context.Context, token *entities.RefreshToken) error {
+	return m.CreateFn(ctx, token)
+}
+func (m *RefreshTokenRepository) FindByTokenHash(ctx context.Context, tokenHash string) (*entities.RefreshToken, error) {
+	return m.FindByTokenHashFn(ctx, tokenHash)
+}
+func (m *RefreshTokenRepository) Revoke(ctx context.Context, id uuid.UUID, revokedAt time.Time) error {
+	return m.RevokeFn(ctx, id, revokedAt)
 }
 
 func (m *CustomerRepository) Create(ctx context.Context, customer *entities.Customer) error {

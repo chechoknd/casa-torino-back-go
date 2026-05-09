@@ -19,4 +19,7 @@ COPY --from=builder /bin/backend /bin/backend
 
 EXPOSE 8080
 
+RUN adduser -D -u 1001 appuser
+USER appuser
+
 CMD ["/bin/backend"]

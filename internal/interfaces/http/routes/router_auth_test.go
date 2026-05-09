@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/casatorino/backend/internal/application/dto"
@@ -25,6 +26,14 @@ func (fakeAuthUseCase) Register(context.Context, dto.RegisterUserInput) (dto.Aut
 
 func (fakeAuthUseCase) Login(context.Context, dto.LoginInput) (dto.AuthTokenOutput, error) {
 	return dto.AuthTokenOutput{}, nil
+}
+
+func (fakeAuthUseCase) Refresh(context.Context, dto.RefreshTokenInput) (dto.AuthTokenOutput, error) {
+	return dto.AuthTokenOutput{}, nil
+}
+
+func (fakeAuthUseCase) Logout(context.Context, dto.LogoutInput) error {
+	return nil
 }
 
 func TestRouterProtectsBusinessRoutesWhenVerifierConfigured(t *testing.T) {
@@ -55,5 +64,39 @@ func TestRouterKeepsAuthRoutesPublic(t *testing.T) {
 
 	if recorder.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want %d from public auth handler validation", recorder.Code, http.StatusBadRequest)
+	}
+}
+
+func TestRouterRejectsTooLargeRequestBody(t *testing.T) {
+	router := NewRouter(Dependencies{
+		Auth: handlers.NewAuthHandler(fakeAuthUseCase{}),
+	})
+
+	body := `{"email_or_username":"` + strings.Repeat("a", 1<<20) + `","password":"password123"}`
+	request := httptest.NewRequest(http.MethodPost, "/auth/login", strings.NewReader(body))
+	recorder := httptest.NewRecorder()
+
+	router.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusRequestEntityTooLarge)
+	}
+}
+
+func TestRouterHealthIsPublic(t *testing.T) {
+	router := NewRouter(Dependencies{
+		TokenVerifier: rejectingVerifier{},
+	})
+
+	request := httptest.NewRequest(http.MethodGet, "/health", nil)
+	recorder := httptest.NewRecorder()
+
+	router.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusOK)
+	}
+	if body := recorder.Body.String(); body != `{"status":"ok"}` {
+		t.Fatalf("body = %q, want health status", body)
 	}
 }
