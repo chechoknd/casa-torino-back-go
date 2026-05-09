@@ -65,6 +65,10 @@ func WriteError(w http.ResponseWriter, err error) {
 		status = http.StatusUnauthorized
 		code = "UNAUTHORIZED"
 		message = "unauthorized"
+	case errors.Is(err, domainerrors.ErrRequestTooLarge):
+		status = http.StatusRequestEntityTooLarge
+		code = "REQUEST_TOO_LARGE"
+		message = "request entity too large"
 	}
 
 	w.Header().Set("Content-Type", "application/json")

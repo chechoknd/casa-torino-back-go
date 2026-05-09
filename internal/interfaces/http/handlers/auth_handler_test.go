@@ -20,6 +20,8 @@ import (
 type fakeAuthUseCase struct {
 	registerFn func(context.Context, dto.RegisterUserInput) (dto.AuthUserOutput, error)
 	loginFn    func(context.Context, dto.LoginInput) (dto.AuthTokenOutput, error)
+	refreshFn  func(context.Context, dto.RefreshTokenInput) (dto.AuthTokenOutput, error)
+	logoutFn   func(context.Context, dto.LogoutInput) error
 }
 
 func (f fakeAuthUseCase) Register(ctx context.Context, input dto.RegisterUserInput) (dto.AuthUserOutput, error) {
@@ -28,6 +30,14 @@ func (f fakeAuthUseCase) Register(ctx context.Context, input dto.RegisterUserInp
 
 func (f fakeAuthUseCase) Login(ctx context.Context, input dto.LoginInput) (dto.AuthTokenOutput, error) {
 	return f.loginFn(ctx, input)
+}
+
+func (f fakeAuthUseCase) Refresh(ctx context.Context, input dto.RefreshTokenInput) (dto.AuthTokenOutput, error) {
+	return f.refreshFn(ctx, input)
+}
+
+func (f fakeAuthUseCase) Logout(ctx context.Context, input dto.LogoutInput) error {
+	return f.logoutFn(ctx, input)
 }
 
 func TestAuthEndpointsSuccess(t *testing.T) {
@@ -58,6 +68,24 @@ func TestAuthEndpointsSuccess(t *testing.T) {
 				User:        user,
 			}, nil
 		},
+		refreshFn: func(_ context.Context, input dto.RefreshTokenInput) (dto.AuthTokenOutput, error) {
+			if input.RefreshToken != "refresh-token" {
+				t.Fatalf("unexpected refresh input: %+v", input)
+			}
+			return dto.AuthTokenOutput{
+				AccessToken:  "new-token",
+				RefreshToken: "new-refresh-token",
+				TokenType:    "Bearer",
+				ExpiresAt:    now.Add(15 * time.Minute),
+				User:         user,
+			}, nil
+		},
+		logoutFn: func(_ context.Context, input dto.LogoutInput) error {
+			if input.RefreshToken != "refresh-token" {
+				t.Fatalf("unexpected logout input: %+v", input)
+			}
+			return nil
+		},
 	}
 	router := routes.NewRouter(routes.Dependencies{
 		Auth: handlers.NewAuthHandler(useCase),
@@ -79,6 +107,18 @@ func TestAuthEndpointsSuccess(t *testing.T) {
 			name:       "login",
 			path:       "/auth/login",
 			body:       `{"email_or_username":"user@example.com","password":"Password123"}`,
+			wantStatus: http.StatusOK,
+		},
+		{
+			name:       "refresh",
+			path:       "/auth/refresh",
+			body:       `{"refresh_token":"refresh-token"}`,
+			wantStatus: http.StatusOK,
+		},
+		{
+			name:       "logout",
+			path:       "/auth/logout",
+			body:       `{"refresh_token":"refresh-token"}`,
 			wantStatus: http.StatusOK,
 		},
 	}
@@ -106,6 +146,12 @@ func TestAuthLoginInvalidCredentials(t *testing.T) {
 			},
 			loginFn: func(context.Context, dto.LoginInput) (dto.AuthTokenOutput, error) {
 				return dto.AuthTokenOutput{}, domainerrors.ErrInvalidCredentials
+			},
+			refreshFn: func(context.Context, dto.RefreshTokenInput) (dto.AuthTokenOutput, error) {
+				return dto.AuthTokenOutput{}, nil
+			},
+			logoutFn: func(context.Context, dto.LogoutInput) error {
+				return nil
 			},
 		}),
 	})

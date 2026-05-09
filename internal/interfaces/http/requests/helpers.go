@@ -2,6 +2,7 @@ package requests
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -12,6 +13,10 @@ import (
 
 func DecodeJSON(r *http.Request, target any) error {
 	if err := json.NewDecoder(r.Body).Decode(target); err != nil {
+		var maxBytesError *http.MaxBytesError
+		if errors.As(err, &maxBytesError) {
+			return domainerrors.ErrRequestTooLarge
+		}
 		return domainerrors.ErrInvalidInput
 	}
 	return nil

@@ -2,6 +2,10 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
 	"errors"
 	"net/mail"
 	"regexp"
@@ -17,6 +21,7 @@ import (
 )
 
 const minPasswordLength = 8
+const refreshTokenTTL = 7 * 24 * time.Hour
 
 var usernamePattern = regexp.MustCompile(`^[a-zA-Z0-9_.-]{3,50}$`)
 
@@ -30,16 +35,23 @@ type TokenIssuer interface {
 }
 
 type UseCase struct {
-	users  repositories.UserRepository
-	hasher PasswordHasher
-	tokens TokenIssuer
+	users         repositories.UserRepository
+	refreshTokens repositories.RefreshTokenRepository
+	hasher        PasswordHasher
+	tokens        TokenIssuer
 }
 
-func NewUseCase(users repositories.UserRepository, hasher PasswordHasher, tokens TokenIssuer) *UseCase {
+func NewUseCase(users repositories.UserRepository, hasher PasswordHasher, tokens TokenIssuer, refreshTokens ...repositories.RefreshTokenRepository) *UseCase {
+	var refreshTokenRepo repositories.RefreshTokenRepository
+	if len(refreshTokens) > 0 {
+		refreshTokenRepo = refreshTokens[0]
+	}
+
 	return &UseCase{
-		users:  users,
-		hasher: hasher,
-		tokens: tokens,
+		users:         users,
+		refreshTokens: refreshTokenRepo,
+		hasher:        hasher,
+		tokens:        tokens,
 	}
 }
 
@@ -118,12 +130,91 @@ func (uc *UseCase) Login(ctx context.Context, input dto.LoginInput) (dto.AuthTok
 		return dto.AuthTokenOutput{}, err
 	}
 
+	refreshToken, err := uc.issueRefreshToken(ctx, user.ID)
+	if err != nil {
+		return dto.AuthTokenOutput{}, err
+	}
+
 	return dto.AuthTokenOutput{
-		AccessToken: token,
-		TokenType:   "Bearer",
-		ExpiresAt:   expiresAt,
-		User:        toAuthUserOutput(*user),
+		AccessToken:  token,
+		RefreshToken: refreshToken,
+		TokenType:    "Bearer",
+		ExpiresAt:    expiresAt,
+		User:         toAuthUserOutput(*user),
 	}, nil
+}
+
+func (uc *UseCase) Refresh(ctx context.Context, input dto.RefreshTokenInput) (dto.AuthTokenOutput, error) {
+	rawToken := strings.TrimSpace(input.RefreshToken)
+	if rawToken == "" || uc.refreshTokens == nil {
+		return dto.AuthTokenOutput{}, domainerrors.ErrUnauthorized
+	}
+
+	storedToken, err := uc.refreshTokens.FindByTokenHash(ctx, hashRefreshToken(rawToken))
+	if err != nil {
+		if errors.Is(err, domainerrors.ErrNotFound) {
+			return dto.AuthTokenOutput{}, domainerrors.ErrUnauthorized
+		}
+		return dto.AuthTokenOutput{}, err
+	}
+
+	now := time.Now().UTC()
+	if !storedToken.IsActive(now) {
+		return dto.AuthTokenOutput{}, domainerrors.ErrUnauthorized
+	}
+
+	user, err := uc.users.FindByID(ctx, storedToken.UserID)
+	if err != nil {
+		if errors.Is(err, domainerrors.ErrNotFound) {
+			return dto.AuthTokenOutput{}, domainerrors.ErrUnauthorized
+		}
+		return dto.AuthTokenOutput{}, err
+	}
+	if user == nil || !user.IsActive {
+		return dto.AuthTokenOutput{}, domainerrors.ErrUnauthorized
+	}
+
+	if err := uc.refreshTokens.Revoke(ctx, storedToken.ID, now); err != nil {
+		return dto.AuthTokenOutput{}, err
+	}
+
+	accessToken, expiresAt, err := uc.tokens.Generate(ctx, user.ID, user.Email, user.Username)
+	if err != nil {
+		return dto.AuthTokenOutput{}, err
+	}
+
+	newRefreshToken, err := uc.issueRefreshToken(ctx, user.ID)
+	if err != nil {
+		return dto.AuthTokenOutput{}, err
+	}
+
+	return dto.AuthTokenOutput{
+		AccessToken:  accessToken,
+		RefreshToken: newRefreshToken,
+		TokenType:    "Bearer",
+		ExpiresAt:    expiresAt,
+		User:         toAuthUserOutput(*user),
+	}, nil
+}
+
+func (uc *UseCase) Logout(ctx context.Context, input dto.LogoutInput) error {
+	rawToken := strings.TrimSpace(input.RefreshToken)
+	if rawToken == "" || uc.refreshTokens == nil {
+		return domainerrors.ErrUnauthorized
+	}
+
+	storedToken, err := uc.refreshTokens.FindByTokenHash(ctx, hashRefreshToken(rawToken))
+	if err != nil {
+		if errors.Is(err, domainerrors.ErrNotFound) {
+			return domainerrors.ErrUnauthorized
+		}
+		return err
+	}
+	if storedToken.RevokedAt != nil {
+		return nil
+	}
+
+	return uc.refreshTokens.Revoke(ctx, storedToken.ID, time.Now().UTC())
 }
 
 func (uc *UseCase) findUserByIdentifier(ctx context.Context, identifier string) (*entities.User, error) {
@@ -167,4 +258,44 @@ func toAuthUserOutput(user entities.User) dto.AuthUserOutput {
 		FullName:  user.FullName,
 		CreatedAt: user.CreatedAt,
 	}
+}
+
+func (uc *UseCase) issueRefreshToken(ctx context.Context, userID uuid.UUID) (string, error) {
+	if uc.refreshTokens == nil {
+		return "", nil
+	}
+
+	rawToken, err := generateRefreshToken()
+	if err != nil {
+		return "", err
+	}
+
+	now := time.Now().UTC()
+	token := &entities.RefreshToken{
+		ID:        uuid.New(),
+		UserID:    userID,
+		TokenHash: hashRefreshToken(rawToken),
+		CreatedAt: now,
+		ExpiresAt: now.Add(refreshTokenTTL),
+	}
+
+	if err := uc.refreshTokens.Create(ctx, token); err != nil {
+		return "", err
+	}
+
+	return rawToken, nil
+}
+
+func generateRefreshToken() (string, error) {
+	tokenBytes := make([]byte, 32)
+	if _, err := rand.Read(tokenBytes); err != nil {
+		return "", err
+	}
+
+	return base64.RawURLEncoding.EncodeToString(tokenBytes), nil
+}
+
+func hashRefreshToken(token string) string {
+	sum := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(sum[:])
 }

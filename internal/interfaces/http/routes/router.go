@@ -2,6 +2,7 @@ package routes
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -26,14 +27,27 @@ func NewRouter(deps Dependencies) http.Handler {
 	router := chi.NewRouter()
 	router.Use(appmiddleware.RequestID)
 	router.Use(appmiddleware.CORS(deps.CORSAllowedOrigins))
+	router.Use(appmiddleware.SecurityHeaders)
+	router.Use(appmiddleware.MaxBodyBytes(1 << 20))
+	router.Use(appmiddleware.RateLimiter(
+		appmiddleware.RateLimit{Requests: 100, Window: time.Minute},
+		appmiddleware.WithRouteRateLimit("/auth/", appmiddleware.RateLimit{Requests: 5, Window: time.Minute}),
+	))
 	router.Use(appmiddleware.ContentType)
 	router.Use(appmiddleware.Logger)
 	router.Use(appmiddleware.Recoverer)
+
+	router.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
+	})
 
 	if deps.Auth != nil {
 		router.Route("/auth", func(r chi.Router) {
 			r.Post("/register", deps.Auth.Register)
 			r.Post("/login", deps.Auth.Login)
+			r.Post("/refresh", deps.Auth.Refresh)
+			r.Post("/logout", deps.Auth.Logout)
 		})
 	}
 
