@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/casatorino/backend/internal/domain/valueobjects"
 	"github.com/casatorino/backend/internal/interfaces/http/handlers"
 	appmiddleware "github.com/casatorino/backend/internal/interfaces/http/middleware"
 )
@@ -54,6 +55,7 @@ func NewRouter(deps Dependencies) http.Handler {
 	protected := chi.NewRouter()
 	if deps.TokenVerifier != nil {
 		protected.Use(appmiddleware.JWTAuth(deps.TokenVerifier))
+		protected.Use(appmiddleware.RequireRole(valueobjects.UserRoleAdmin))
 	}
 
 	protected.Route("/customers", func(r chi.Router) {

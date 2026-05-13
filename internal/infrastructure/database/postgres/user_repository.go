@@ -9,6 +9,7 @@ import (
 
 	"github.com/casatorino/backend/internal/domain/entities"
 	domainrepositories "github.com/casatorino/backend/internal/domain/repositories"
+	"github.com/casatorino/backend/internal/domain/valueobjects"
 )
 
 var _ domainrepositories.UserRepository = (*UserRepository)(nil)
@@ -28,19 +29,21 @@ func (r *UserRepository) Create(ctx context.Context, user *entities.User) error 
 			email,
 			username,
 			full_name,
+			role,
 			password_hash,
 			created_at,
 			updated_at,
 			is_active
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8
+			$1, $2, $3, $4, $5, $6, $7, $8, $9
 		)
-		RETURNING id, email, username, full_name, password_hash, created_at, updated_at, is_active
+		RETURNING id, email, username, full_name, role, password_hash, created_at, updated_at, is_active
 	`,
 		user.ID,
 		user.Email,
 		user.Username,
 		user.FullName,
+		string(user.Role),
 		user.PasswordHash,
 		user.CreatedAt,
 		user.UpdatedAt,
@@ -53,7 +56,7 @@ func (r *UserRepository) Create(ctx context.Context, user *entities.User) error 
 func (r *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (*entities.User, error) {
 	var user entities.User
 	row := r.conn.QueryRow(ctx, `
-		SELECT id, email, username, full_name, password_hash, created_at, updated_at, is_active
+		SELECT id, email, username, full_name, role, password_hash, created_at, updated_at, is_active
 		FROM users
 		WHERE id = $1
 	`, id)
@@ -68,7 +71,7 @@ func (r *UserRepository) FindByID(ctx context.Context, id uuid.UUID) (*entities.
 func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*entities.User, error) {
 	var user entities.User
 	row := r.conn.QueryRow(ctx, `
-		SELECT id, email, username, full_name, password_hash, created_at, updated_at, is_active
+		SELECT id, email, username, full_name, role, password_hash, created_at, updated_at, is_active
 		FROM users
 		WHERE LOWER(email) = LOWER($1)
 	`, email)
@@ -83,7 +86,7 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*entiti
 func (r *UserRepository) FindByUsername(ctx context.Context, username string) (*entities.User, error) {
 	var user entities.User
 	row := r.conn.QueryRow(ctx, `
-		SELECT id, email, username, full_name, password_hash, created_at, updated_at, is_active
+		SELECT id, email, username, full_name, role, password_hash, created_at, updated_at, is_active
 		FROM users
 		WHERE LOWER(username) = LOWER($1)
 	`, username)
@@ -100,11 +103,13 @@ type userScanner interface {
 }
 
 func scanUser(row userScanner, user *entities.User) error {
+	var role string
 	err := row.Scan(
 		&user.ID,
 		&user.Email,
 		&user.Username,
 		&user.FullName,
+		&role,
 		&user.PasswordHash,
 		&user.CreatedAt,
 		&user.UpdatedAt,
@@ -113,6 +118,12 @@ func scanUser(row userScanner, user *entities.User) error {
 	if err != nil {
 		return mapError(err)
 	}
+
+	userRole, err := valueobjects.NewUserRole(role)
+	if err != nil {
+		return err
+	}
+	user.Role = userRole
 
 	return nil
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 
 	domainerrors "github.com/casatorino/backend/internal/domain/errors"
+	"github.com/casatorino/backend/internal/domain/valueobjects"
 )
 
 func TestJWTManagerGenerateAndVerify(t *testing.T) {
@@ -16,7 +17,7 @@ func TestJWTManagerGenerateAndVerify(t *testing.T) {
 	manager := NewJWTManagerWithClock("test-secret", 15*time.Minute, func() time.Time { return now })
 	userID := uuid.New()
 
-	token, expiresAt, err := manager.Generate(context.Background(), userID, "user@example.com", "demo")
+	token, expiresAt, err := manager.Generate(context.Background(), userID, "user@example.com", "demo", valueobjects.UserRoleAdmin)
 	if err != nil {
 		t.Fatalf("Generate error = %v", err)
 	}
@@ -28,7 +29,7 @@ func TestJWTManagerGenerateAndVerify(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Verify error = %v", err)
 	}
-	if claims.UserID != userID || claims.Email != "user@example.com" || claims.Username != "demo" {
+	if claims.UserID != userID || claims.Email != "user@example.com" || claims.Username != "demo" || claims.Role != valueobjects.UserRoleAdmin {
 		t.Fatalf("unexpected claims: %+v", claims)
 	}
 }
@@ -36,7 +37,7 @@ func TestJWTManagerGenerateAndVerify(t *testing.T) {
 func TestJWTManagerRejectsExpiredToken(t *testing.T) {
 	now := time.Date(2026, 5, 8, 12, 0, 0, 0, time.UTC)
 	manager := NewJWTManagerWithClock("test-secret", time.Minute, func() time.Time { return now })
-	token, _, err := manager.Generate(context.Background(), uuid.New(), "user@example.com", "demo")
+	token, _, err := manager.Generate(context.Background(), uuid.New(), "user@example.com", "demo", valueobjects.UserRoleCustomer)
 	if err != nil {
 		t.Fatalf("Generate error = %v", err)
 	}
@@ -54,7 +55,7 @@ func TestJWTManagerRejectsExpiredToken(t *testing.T) {
 func TestJWTManagerRejectsInvalidSignature(t *testing.T) {
 	now := time.Date(2026, 5, 8, 12, 0, 0, 0, time.UTC)
 	manager := NewJWTManagerWithClock("test-secret", time.Minute, func() time.Time { return now })
-	token, _, err := manager.Generate(context.Background(), uuid.New(), "user@example.com", "demo")
+	token, _, err := manager.Generate(context.Background(), uuid.New(), "user@example.com", "demo", valueobjects.UserRoleCustomer)
 	if err != nil {
 		t.Fatalf("Generate error = %v", err)
 	}

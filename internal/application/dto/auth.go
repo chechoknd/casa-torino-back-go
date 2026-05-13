@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
+	"github.com/casatorino/backend/internal/domain/valueobjects"
 )
 
 type RegisterUserInput struct {
@@ -19,11 +21,12 @@ type LoginInput struct {
 }
 
 type AuthUserOutput struct {
-	ID        uuid.UUID `json:"id"`
-	Email     string    `json:"email"`
-	Username  string    `json:"username"`
-	FullName  string    `json:"full_name"`
-	CreatedAt time.Time `json:"created_at"`
+	ID        uuid.UUID             `json:"id"`
+	Email     string                `json:"email"`
+	Username  string                `json:"username"`
+	FullName  string                `json:"full_name"`
+	Role      valueobjects.UserRole `json:"role"`
+	CreatedAt time.Time             `json:"created_at"`
 }
 
 type AuthTokenOutput struct {

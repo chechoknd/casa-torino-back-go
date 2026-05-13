@@ -38,6 +38,7 @@ func (a tokenVerifierAdapter) Verify(ctx context.Context, token string) (appmidd
 		UserID:    claims.UserID,
 		Email:     claims.Email,
 		Username:  claims.Username,
+		Role:      claims.Role,
 		ExpiresAt: claims.ExpiresAt,
 	}, nil
 }

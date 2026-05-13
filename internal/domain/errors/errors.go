@@ -11,5 +11,6 @@ var (
 	ErrDuplicateUsername  = stderrors.New("domain: duplicate username")
 	ErrInvalidCredentials = stderrors.New("domain: invalid credentials")
 	ErrUnauthorized       = stderrors.New("domain: unauthorized")
+	ErrForbidden          = stderrors.New("domain: forbidden")
 	ErrRequestTooLarge    = stderrors.New("domain: request too large")
 )

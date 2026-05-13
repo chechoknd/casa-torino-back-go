@@ -18,6 +18,7 @@ import (
 	"github.com/casatorino/backend/internal/domain/entities"
 	domainerrors "github.com/casatorino/backend/internal/domain/errors"
 	"github.com/casatorino/backend/internal/domain/repositories"
+	"github.com/casatorino/backend/internal/domain/valueobjects"
 )
 
 const minPasswordLength = 8
@@ -31,7 +32,7 @@ type PasswordHasher interface {
 }
 
 type TokenIssuer interface {
-	Generate(ctx context.Context, userID uuid.UUID, email, username string) (string, time.Time, error)
+	Generate(ctx context.Context, userID uuid.UUID, email, username string, role valueobjects.UserRole) (string, time.Time, error)
 }
 
 type UseCase struct {
@@ -91,6 +92,7 @@ func (uc *UseCase) Register(ctx context.Context, input dto.RegisterUserInput) (d
 		Email:        email,
 		Username:     username,
 		FullName:     fullName,
+		Role:         valueobjects.UserRoleCustomer,
 		PasswordHash: passwordHash,
 		CreatedAt:    now,
 		UpdatedAt:    now,
@@ -125,7 +127,7 @@ func (uc *UseCase) Login(ctx context.Context, input dto.LoginInput) (dto.AuthTok
 		return dto.AuthTokenOutput{}, domainerrors.ErrInvalidCredentials
 	}
 
-	token, expiresAt, err := uc.tokens.Generate(ctx, user.ID, user.Email, user.Username)
+	token, expiresAt, err := uc.tokens.Generate(ctx, user.ID, user.Email, user.Username, user.Role)
 	if err != nil {
 		return dto.AuthTokenOutput{}, err
 	}
@@ -178,7 +180,7 @@ func (uc *UseCase) Refresh(ctx context.Context, input dto.RefreshTokenInput) (dt
 		return dto.AuthTokenOutput{}, err
 	}
 
-	accessToken, expiresAt, err := uc.tokens.Generate(ctx, user.ID, user.Email, user.Username)
+	accessToken, expiresAt, err := uc.tokens.Generate(ctx, user.ID, user.Email, user.Username, user.Role)
 	if err != nil {
 		return dto.AuthTokenOutput{}, err
 	}
@@ -256,6 +258,7 @@ func toAuthUserOutput(user entities.User) dto.AuthUserOutput {
 		Email:     user.Email,
 		Username:  user.Username,
 		FullName:  user.FullName,
+		Role:      user.Role,
 		CreatedAt: user.CreatedAt,
 	}
 }

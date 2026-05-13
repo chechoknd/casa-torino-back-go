@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/casatorino/backend/internal/application/dto"
+	"github.com/casatorino/backend/internal/domain/valueobjects"
 	"github.com/casatorino/backend/internal/interfaces/http/handlers"
 	"github.com/casatorino/backend/internal/interfaces/http/middleware"
 )
@@ -16,6 +17,14 @@ type rejectingVerifier struct{}
 
 func (rejectingVerifier) Verify(context.Context, string) (middleware.TokenClaims, error) {
 	return middleware.TokenClaims{}, nil
+}
+
+type customerVerifier struct{}
+
+func (customerVerifier) Verify(context.Context, string) (middleware.TokenClaims, error) {
+	return middleware.TokenClaims{
+		Role: valueobjects.UserRoleCustomer,
+	}, nil
 }
 
 type fakeAuthUseCase struct{}
@@ -48,6 +57,22 @@ func TestRouterProtectsBusinessRoutesWhenVerifierConfigured(t *testing.T) {
 
 	if recorder.Code != http.StatusUnauthorized {
 		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusUnauthorized)
+	}
+}
+
+func TestRouterRequiresAdminRoleForBusinessRoutes(t *testing.T) {
+	router := NewRouter(Dependencies{
+		TokenVerifier: customerVerifier{},
+	})
+
+	request := httptest.NewRequest(http.MethodGet, "/products/", nil)
+	request.Header.Set("Authorization", "Bearer customer-token")
+	recorder := httptest.NewRecorder()
+
+	router.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusForbidden)
 	}
 }
 

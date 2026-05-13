@@ -11,6 +11,7 @@ import (
 	"github.com/casatorino/backend/internal/application/dto"
 	"github.com/casatorino/backend/internal/domain/entities"
 	domainerrors "github.com/casatorino/backend/internal/domain/errors"
+	"github.com/casatorino/backend/internal/domain/valueobjects"
 	"github.com/casatorino/backend/tests/mocks"
 )
 
@@ -28,11 +29,11 @@ func (f fakeHasher) Compare(hash, password string) error {
 }
 
 type fakeTokenIssuer struct {
-	generateFn func(context.Context, uuid.UUID, string, string) (string, time.Time, error)
+	generateFn func(context.Context, uuid.UUID, string, string, valueobjects.UserRole) (string, time.Time, error)
 }
 
-func (f fakeTokenIssuer) Generate(ctx context.Context, userID uuid.UUID, email, username string) (string, time.Time, error) {
-	return f.generateFn(ctx, userID, email, username)
+func (f fakeTokenIssuer) Generate(ctx context.Context, userID uuid.UUID, email, username string, role valueobjects.UserRole) (string, time.Time, error) {
+	return f.generateFn(ctx, userID, email, username, role)
 }
 
 func TestRegisterCreatesUserWithHashedPassword(t *testing.T) {
@@ -77,7 +78,10 @@ func TestRegisterCreatesUserWithHashedPassword(t *testing.T) {
 	if createdUser.PasswordHash != "hashed-password" {
 		t.Fatalf("password hash = %q", createdUser.PasswordHash)
 	}
-	if out.Email != createdUser.Email || out.Username != createdUser.Username {
+	if createdUser.Role != valueobjects.UserRoleCustomer {
+		t.Fatalf("role = %q, want CUSTOMER", createdUser.Role)
+	}
+	if out.Email != createdUser.Email || out.Username != createdUser.Username || out.Role != valueobjects.UserRoleCustomer {
 		t.Fatalf("unexpected output: %+v", out)
 	}
 }
@@ -121,6 +125,7 @@ func TestLoginReturnsAccessToken(t *testing.T) {
 				Email:        email,
 				Username:     "demo",
 				FullName:     "Demo User",
+				Role:         valueobjects.UserRoleAdmin,
 				PasswordHash: "hashed-password",
 				CreatedAt:    expiresAt.Add(-time.Hour),
 				IsActive:     true,
@@ -136,8 +141,8 @@ func TestLoginReturnsAccessToken(t *testing.T) {
 			return nil
 		},
 	}, fakeTokenIssuer{
-		generateFn: func(_ context.Context, id uuid.UUID, email, username string) (string, time.Time, error) {
-			if id != userID || email != "user@example.com" || username != "demo" {
+		generateFn: func(_ context.Context, id uuid.UUID, email, username string, role valueobjects.UserRole) (string, time.Time, error) {
+			if id != userID || email != "user@example.com" || username != "demo" || role != valueobjects.UserRoleAdmin {
 				t.Fatalf("unexpected token input")
 			}
 			return "token", expiresAt, nil
@@ -154,6 +159,9 @@ func TestLoginReturnsAccessToken(t *testing.T) {
 	if out.AccessToken != "token" || out.TokenType != "Bearer" || !out.ExpiresAt.Equal(expiresAt) {
 		t.Fatalf("unexpected token output: %+v", out)
 	}
+	if out.User.Role != valueobjects.UserRoleAdmin {
+		t.Fatalf("role = %q, want ADMIN", out.User.Role)
+	}
 }
 
 func TestLoginCreatesRefreshToken(t *testing.T) {
@@ -168,6 +176,7 @@ func TestLoginCreatesRefreshToken(t *testing.T) {
 				Email:        "user@example.com",
 				Username:     "demo",
 				FullName:     "Demo User",
+				Role:         valueobjects.UserRoleCustomer,
 				PasswordHash: "hashed-password",
 				IsActive:     true,
 			}, nil
@@ -183,7 +192,7 @@ func TestLoginCreatesRefreshToken(t *testing.T) {
 		hashFn:    func(string) (string, error) { return "", nil },
 		compareFn: func(string, string) error { return nil },
 	}, fakeTokenIssuer{
-		generateFn: func(context.Context, uuid.UUID, string, string) (string, time.Time, error) {
+		generateFn: func(context.Context, uuid.UUID, string, string, valueobjects.UserRole) (string, time.Time, error) {
 			return "access-token", expiresAt, nil
 		},
 	}, refreshRepo)
@@ -224,6 +233,7 @@ func TestRefreshRotatesRefreshToken(t *testing.T) {
 				Email:    "user@example.com",
 				Username: "demo",
 				FullName: "Demo User",
+				Role:     valueobjects.UserRoleCustomer,
 				IsActive: true,
 			}, nil
 		},
@@ -254,8 +264,8 @@ func TestRefreshRotatesRefreshToken(t *testing.T) {
 		},
 	}
 	uc := NewUseCase(userRepo, fakeHasher{}, fakeTokenIssuer{
-		generateFn: func(_ context.Context, id uuid.UUID, email, username string) (string, time.Time, error) {
-			if id != userID || email != "user@example.com" || username != "demo" {
+		generateFn: func(_ context.Context, id uuid.UUID, email, username string, role valueobjects.UserRole) (string, time.Time, error) {
+			if id != userID || email != "user@example.com" || username != "demo" || role != valueobjects.UserRoleCustomer {
 				t.Fatalf("unexpected access token input")
 			}
 			return "new-access-token", expiresAt, nil
@@ -284,6 +294,7 @@ func TestLoginRejectsInvalidPassword(t *testing.T) {
 				ID:           uuid.New(),
 				Email:        "user@example.com",
 				Username:     "demo",
+				Role:         valueobjects.UserRoleCustomer,
 				PasswordHash: "hashed-password",
 				IsActive:     true,
 			}, nil

@@ -8,12 +8,14 @@ import (
 	"github.com/google/uuid"
 
 	domainerrors "github.com/casatorino/backend/internal/domain/errors"
+	"github.com/casatorino/backend/internal/domain/valueobjects"
 )
 
 type TokenClaims struct {
 	UserID    uuid.UUID
 	Email     string
 	Username  string
+	Role      valueobjects.UserRole
 	IssuedAt  time.Time
 	ExpiresAt time.Time
 }
@@ -38,13 +40,14 @@ func NewJWTManagerWithClock(secret string, expiresIn time.Duration, now func() t
 	return manager
 }
 
-func (m *JWTManager) Generate(_ context.Context, userID uuid.UUID, email, username string) (string, time.Time, error) {
+func (m *JWTManager) Generate(_ context.Context, userID uuid.UUID, email, username string, role valueobjects.UserRole) (string, time.Time, error) {
 	now := m.now()
 	expiresAt := now.Add(m.expiresIn)
 
 	claims := jwtClaims{
 		Email:    email,
 		Username: username,
+		Role:     role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   userID.String(),
 			IssuedAt:  jwt.NewNumericDate(now),
@@ -79,7 +82,12 @@ func (m *JWTManager) Verify(_ context.Context, token string) (TokenClaims, error
 		return TokenClaims{}, domainerrors.ErrUnauthorized
 	}
 
-	if claims.Subject == "" || claims.Email == "" || claims.Username == "" || claims.ExpiresAt == nil {
+	if claims.Subject == "" || claims.Email == "" || claims.Username == "" || claims.Role == "" || claims.ExpiresAt == nil {
+		return TokenClaims{}, domainerrors.ErrUnauthorized
+	}
+
+	role, err := valueobjects.NewUserRole(string(claims.Role))
+	if err != nil {
 		return TokenClaims{}, domainerrors.ErrUnauthorized
 	}
 
@@ -97,13 +105,15 @@ func (m *JWTManager) Verify(_ context.Context, token string) (TokenClaims, error
 		UserID:    userID,
 		Email:     claims.Email,
 		Username:  claims.Username,
+		Role:      role,
 		IssuedAt:  issuedAt,
 		ExpiresAt: claims.ExpiresAt.Time.UTC(),
 	}, nil
 }
 
 type jwtClaims struct {
-	Email    string `json:"email"`
-	Username string `json:"username"`
+	Email    string                `json:"email"`
+	Username string                `json:"username"`
+	Role     valueobjects.UserRole `json:"role"`
 	jwt.RegisteredClaims
 }

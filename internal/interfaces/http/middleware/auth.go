@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 
 	domainerrors "github.com/casatorino/backend/internal/domain/errors"
+	"github.com/casatorino/backend/internal/domain/valueobjects"
 	"github.com/casatorino/backend/internal/interfaces/http/responses"
 )
 
@@ -16,6 +17,7 @@ type AuthenticatedUser struct {
 	ID        uuid.UUID
 	Email     string
 	Username  string
+	Role      valueobjects.UserRole
 	ExpiresAt time.Time
 }
 
@@ -23,6 +25,7 @@ type TokenClaims struct {
 	UserID    uuid.UUID
 	Email     string
 	Username  string
+	Role      valueobjects.UserRole
 	ExpiresAt time.Time
 }
 
@@ -51,10 +54,34 @@ func JWTAuth(verifier TokenVerifier) func(http.Handler) http.Handler {
 				ID:        claims.UserID,
 				Email:     claims.Email,
 				Username:  claims.Username,
+				Role:      claims.Role,
 				ExpiresAt: claims.ExpiresAt,
 			}
 			ctx := context.WithValue(r.Context(), authContextKey{}, user)
 			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}
+
+func RequireRole(roles ...valueobjects.UserRole) func(http.Handler) http.Handler {
+	allowed := make(map[valueobjects.UserRole]struct{}, len(roles))
+	for _, role := range roles {
+		allowed[role] = struct{}{}
+	}
+
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			user, ok := UserFromContext(r.Context())
+			if !ok {
+				responses.WriteError(w, domainerrors.ErrUnauthorized)
+				return
+			}
+			if _, ok := allowed[user.Role]; !ok {
+				responses.WriteError(w, domainerrors.ErrForbidden)
+				return
+			}
+
+			next.ServeHTTP(w, r)
 		})
 	}
 }

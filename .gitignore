@@ -17,5 +17,6 @@ coverage.out
 .vscode/
 
 docker-data/
+backups/
 .codex
 casa-torino-prompt-fases.md

@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 
 	domainerrors "github.com/casatorino/backend/internal/domain/errors"
+	"github.com/casatorino/backend/internal/domain/valueobjects"
 )
 
 type fakeVerifier struct {
@@ -33,6 +34,7 @@ func TestJWTAuthInjectsAuthenticatedUser(t *testing.T) {
 				UserID:    userID,
 				Email:     "user@example.com",
 				Username:  "demo",
+				Role:      valueobjects.UserRoleAdmin,
 				ExpiresAt: expiresAt,
 			}, nil
 		},
@@ -41,7 +43,7 @@ func TestJWTAuthInjectsAuthenticatedUser(t *testing.T) {
 		if !ok {
 			t.Fatal("expected authenticated user in context")
 		}
-		if user.ID != userID || user.Email != "user@example.com" || user.Username != "demo" {
+		if user.ID != userID || user.Email != "user@example.com" || user.Username != "demo" || user.Role != valueobjects.UserRoleAdmin {
 			t.Fatalf("unexpected authenticated user: %+v", user)
 		}
 		w.WriteHeader(http.StatusOK)
@@ -102,5 +104,56 @@ func TestBearerTokenRejectsMalformedHeader(t *testing.T) {
 	_, err := bearerToken("Basic token")
 	if !errors.Is(err, domainerrors.ErrUnauthorized) {
 		t.Fatalf("error = %v, want ErrUnauthorized", err)
+	}
+}
+
+func TestRequireRoleAllowsMatchingRole(t *testing.T) {
+	userID := uuid.New()
+	handler := JWTAuth(fakeVerifier{
+		verifyFn: func(context.Context, string) (TokenClaims, error) {
+			return TokenClaims{
+				UserID:   userID,
+				Email:    "admin@example.com",
+				Username: "admin",
+				Role:     valueobjects.UserRoleAdmin,
+			}, nil
+		},
+	})(RequireRole(valueobjects.UserRoleAdmin)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})))
+
+	request := httptest.NewRequest(http.MethodGet, "/products", nil)
+	request.Header.Set("Authorization", "Bearer valid-token")
+	recorder := httptest.NewRecorder()
+
+	handler.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusNoContent)
+	}
+}
+
+func TestRequireRoleRejectsDifferentRole(t *testing.T) {
+	handler := JWTAuth(fakeVerifier{
+		verifyFn: func(context.Context, string) (TokenClaims, error) {
+			return TokenClaims{
+				UserID:   uuid.New(),
+				Email:    "customer@example.com",
+				Username: "customer",
+				Role:     valueobjects.UserRoleCustomer,
+			}, nil
+		},
+	})(RequireRole(valueobjects.UserRoleAdmin)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatal("next handler should not be called")
+	})))
+
+	request := httptest.NewRequest(http.MethodGet, "/products", nil)
+	request.Header.Set("Authorization", "Bearer valid-token")
+	recorder := httptest.NewRecorder()
+
+	handler.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusForbidden)
 	}
 }
