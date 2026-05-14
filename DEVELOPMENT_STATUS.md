@@ -2,11 +2,11 @@
 
 ## TODO
 
-- Revisar estado final y preparar commit de Sprint 2.
+- Preparar commit de Sprint 3.
 
 ## IN PROGRESS
 
-- Preparar commit de Sprint 2.
+- Preparar commit de Sprint 3.
 
 ## DONE
 
@@ -66,6 +66,17 @@
 - Ejecutado `go vet ./...` despues de cambios de Sprint 2.
 - Ejecutado `go test ./...` despues de cambios de Sprint 2.
 - Sprint 2 - Customer Panel y Guest Mode completado.
+- Backup final generado en `backups/casa_torino_post_customer_panel_20260513_190909.sql`.
+- Validada migracion final: version `6`, dirty `false`.
+- Actualizados README y docs con roles, rutas publicas, rutas customer y backup final.
+- Validado flujo guest: catalogo publico `200 OK`, ruta privada `401 UNAUTHORIZED`.
+- Validado flujo admin: login con rol `ADMIN`, products/orders/payments `200 OK`.
+- Validado flujo customer: profile/orders `200 OK`, ruta admin `403 FORBIDDEN`.
+- Usuarios temporales de smoke test final eliminados.
+- Ejecutado `go fmt ./...` despues de cambios de Sprint 3.
+- Ejecutado `go vet ./...` despues de cambios de Sprint 3.
+- Ejecutado `go test ./...` despues de cambios de Sprint 3.
+- Sprint 3 - Integracion, Migraciones y Hardening completado.
 
 ## BLOCKED
 

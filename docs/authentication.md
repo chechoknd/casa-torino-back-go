@@ -5,9 +5,11 @@
 - El backend usa JWT firmado con HMAC SHA-256 (`HS256`) y secreto provisto por `JWT_SECRET`.
 - No se usa una dependencia externa para JWT; la implementacion usa la libreria estandar de Go para mantener baja la superficie de dependencias.
 - Las contrasenas se almacenan solo como hash bcrypt. El costo se configura con `BCRYPT_COST`.
-- Los endpoints publicos son `/auth/register` y `/auth/login`.
-- Las rutas de negocio quedan protegidas cuando el router recibe un verificador JWT configurado. En tests de handlers se permite construir el router sin verificador para mantener pruebas unitarias simples.
-- `REFRESH_TOKEN_EXPIRES` queda configurado para crecimiento futuro, pero esta implementacion entrega solo access token porque no hay flujo de refresh solicitado ni tabla de sesiones/tokens.
+- Los endpoints publicos de auth son `/auth/register`, `/auth/login`, `/auth/refresh` y `/auth/logout`.
+- Las rutas de catalogo publico son `/public/products`, `/public/products/{id}` y `/public/product-categories`.
+- Las rutas admin requieren JWT con rol `ADMIN`.
+- Las rutas customer requieren JWT con rol `CUSTOMER`.
+- El login entrega access token y refresh token.
 
 ## Variables
 
@@ -101,6 +103,7 @@ Response `201 Created`:
     "email": "admin@example.com",
     "username": "admin",
     "full_name": "Admin User",
+    "role": "CUSTOMER",
     "created_at": "2026-05-08T05:16:04.069864Z"
   },
   "message": "ok"
@@ -161,6 +164,7 @@ Response `200 OK`:
       "email": "admin@example.com",
       "username": "admin",
       "full_name": "Admin User",
+      "role": "CUSTOMER",
       "created_at": "2026-05-08T05:16:04.069864Z"
     }
   },
@@ -193,6 +197,19 @@ Si falta el token o es invalido, el backend responde:
 {
   "error": "unauthorized",
   "code": "UNAUTHORIZED"
+}
+```
+
+Si el token es valido pero el rol no tiene permiso, el backend responde:
+
+```http
+403 Forbidden
+```
+
+```json
+{
+  "error": "forbidden",
+  "code": "FORBIDDEN"
 }
 ```
 
@@ -247,7 +264,8 @@ Si el username ya existe:
   - `INVALID_CREDENTIALS`: credenciales invalidas.
   - `DUPLICATE_EMAIL`: el email ya esta registrado.
   - `DUPLICATE_USERNAME`: el usuario ya esta registrado.
-  - `UNAUTHORIZED`: sesion expirada o no iniciada.
+- `UNAUTHORIZED`: sesion expirada o no iniciada.
+- `FORBIDDEN`: usuario autenticado sin permisos para esa ruta.
 
 ### Persistencia del token
 
@@ -259,7 +277,7 @@ Version pragmatica inicial:
 
 Mejora futura:
 
-- Migrar a cookies `HttpOnly` o refresh tokens si el backend agrega flujo de refresh/sesiones.
+- Migrar almacenamiento de refresh token a cookie `HttpOnly` si el producto lo requiere.
 
 ### Rutas protegidas en frontend
 
@@ -334,5 +352,7 @@ Access-Control-Allow-Headers: Content-Type, Authorization, X-Request-ID
 - El token actual es solo access token. No hay endpoint de refresh todavia.
 - La expiracion se define en backend con `JWT_EXPIRES_IN`.
 - Si el frontend conserva un token expirado, el backend respondera `401`.
-- No asumir que `/products` u otras rutas son publicas: ahora requieren JWT.
+- No asumir que `/products` u otras rutas admin son publicas: requieren JWT con rol `ADMIN`.
+- Para catalogo publico usar `/public/products`.
+- Para panel cliente usar `/customer/profile` y `/customer/orders`.
 - El backend responde siempre JSON, incluso en errores.

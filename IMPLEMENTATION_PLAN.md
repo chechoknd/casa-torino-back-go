@@ -157,6 +157,8 @@ No se replantea la arquitectura. No se redisenan modulos existentes. La priorida
 
 ## Sprint 3 - Integracion, Migraciones y Hardening
 
+**Estado:** DONE
+
 ### Features
 
 - Validacion completa del flujo MVP.
@@ -165,17 +167,17 @@ No se replantea la arquitectura. No se redisenan modulos existentes. La priorida
 
 ### Tasks
 
-- Ejecutar backup nuevo antes de probar migraciones finales.
-- Probar aplicar y revertir migraciones en entorno local.
-- Validar que customers, products, ingredients, recipes, orders y payments existentes siguen funcionando.
-- Probar flujo admin: login, crear producto, actualizar producto, listar orders, payments.
-- Probar flujo customer: register/login, ver catalogo, crear order si aplica al MVP.
-- Probar flujo guest: ver catalogo y recibir unauthorized/forbidden en rutas protegidas.
-- Revisar respuestas de error para distinguir `401 Unauthorized` y `403 Forbidden`.
-- Actualizar README o docs minimos con roles, backup y rutas nuevas.
-- Ejecutar `go fmt ./...`.
-- Ejecutar `go vet ./...`.
-- Ejecutar `go test ./...`.
+- [x] Ejecutar backup nuevo antes de probar migraciones finales.
+- [x] Probar aplicar y revertir migraciones en entorno local.
+- [x] Validar que customers, products, ingredients, recipes, orders y payments existentes siguen funcionando.
+- [x] Probar flujo admin: login, listar productos, listar orders, listar payments.
+- [x] Probar flujo customer: register/login, ver catalogo, ver perfil e historial.
+- [x] Probar flujo guest: ver catalogo y recibir unauthorized/forbidden en rutas protegidas.
+- [x] Revisar respuestas de error para distinguir `401 Unauthorized` y `403 Forbidden`.
+- [x] Actualizar README o docs minimos con roles, backup y rutas nuevas.
+- [x] Ejecutar `go fmt ./...`.
+- [x] Ejecutar `go vet ./...`.
+- [x] Ejecutar `go test ./...`.
 
 ### Resultado esperado
 

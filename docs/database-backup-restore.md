@@ -44,3 +44,35 @@ Y validar conteos basicos:
 ```bash
 make db-counts
 ```
+
+## Backup final Customer Panel
+
+Backup generado despues de implementar roles, catalogo publico y panel cliente:
+
+```bash
+backups/casa_torino_post_customer_panel_20260513_190909.sql
+```
+
+Estado de la base al momento del backup:
+
+- `schema_migrations.version`: `6`
+- `schema_migrations.dirty`: `false`
+- `customers`: `13`
+- `products`: `12`
+- `ingredients`: `17`
+- `recipes`: `12`
+- `orders`: `8`
+- `payments`: `6`
+- `users`: `2`
+
+Comando usado:
+
+```bash
+docker compose exec -T db pg_dump -U user -d casa_torino --clean --if-exists --no-owner --no-privileges > backups/casa_torino_post_customer_panel_20260513_190909.sql
+```
+
+Restaurar este backup:
+
+```bash
+docker compose exec -T db psql -U user -d casa_torino < backups/casa_torino_post_customer_panel_20260513_190909.sql
+```
