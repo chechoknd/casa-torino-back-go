@@ -16,6 +16,9 @@ type ProductHandlerUseCase interface {
 	CreateProduct(ctx context.Context, input dto.CreateProductInput) (dto.ProductOutput, error)
 	GetProduct(ctx context.Context, id uuid.UUID) (dto.ProductOutput, error)
 	ListProducts(ctx context.Context, input dto.ListProductsInput) ([]dto.ProductOutput, error)
+	GetPublicProduct(ctx context.Context, id uuid.UUID) (dto.CatalogProductOutput, error)
+	ListPublicProducts(ctx context.Context, input dto.ListProductsInput) ([]dto.CatalogProductOutput, error)
+	ListPublicCategories(ctx context.Context) ([]string, error)
 	UpdateProduct(ctx context.Context, input dto.UpdateProductInput) (dto.ProductOutput, error)
 	DeactivateProduct(ctx context.Context, id uuid.UUID) error
 }
@@ -52,12 +55,48 @@ func (h *ProductHandler) Create(w http.ResponseWriter, r *http.Request) {
 		ProductType: req.ProductType,
 		BasePrice:   basePrice,
 		CostPrice:   costPrice,
+		ImageURL:    req.ImageURL,
+		IsPublic:    req.IsPublic,
 	})
 	if err != nil {
 		responses.WriteError(w, err)
 		return
 	}
 	responses.WriteJSON(w, http.StatusCreated, out)
+}
+
+func (h *ProductHandler) ListPublic(w http.ResponseWriter, r *http.Request) {
+	out, err := h.useCase.ListPublicProducts(r.Context(), dto.ListProductsInput{
+		ProductType: r.URL.Query().Get("product_type"),
+	})
+	if err != nil {
+		responses.WriteError(w, err)
+		return
+	}
+	responses.WriteJSON(w, http.StatusOK, out)
+}
+
+func (h *ProductHandler) GetPublic(w http.ResponseWriter, r *http.Request) {
+	id, err := requests.ParseUUID(chi.URLParam(r, "id"))
+	if err != nil {
+		responses.WriteError(w, err)
+		return
+	}
+	out, err := h.useCase.GetPublicProduct(r.Context(), id)
+	if err != nil {
+		responses.WriteError(w, err)
+		return
+	}
+	responses.WriteJSON(w, http.StatusOK, out)
+}
+
+func (h *ProductHandler) ListPublicCategories(w http.ResponseWriter, r *http.Request) {
+	out, err := h.useCase.ListPublicCategories(r.Context())
+	if err != nil {
+		responses.WriteError(w, err)
+		return
+	}
+	responses.WriteJSON(w, http.StatusOK, out)
 }
 
 func (h *ProductHandler) List(w http.ResponseWriter, r *http.Request) {
@@ -117,6 +156,8 @@ func (h *ProductHandler) Update(w http.ResponseWriter, r *http.Request) {
 		ProductType: req.ProductType,
 		BasePrice:   basePrice,
 		CostPrice:   costPrice,
+		ImageURL:    req.ImageURL,
+		IsPublic:    req.IsPublic,
 	})
 	if err != nil {
 		responses.WriteError(w, err)

@@ -74,11 +74,13 @@ func (m *CustomerRepository) List(ctx context.Context) ([]entities.Customer, err
 }
 
 type ProductRepository struct {
-	CreateFn     func(context.Context, *entities.Product) error
-	UpdateFn     func(context.Context, *entities.Product) error
-	DeactivateFn func(context.Context, uuid.UUID, time.Time) error
-	FindByIDFn   func(context.Context, uuid.UUID) (*entities.Product, error)
-	ListActiveFn func(context.Context) ([]entities.Product, error)
+	CreateFn         func(context.Context, *entities.Product) error
+	UpdateFn         func(context.Context, *entities.Product) error
+	DeactivateFn     func(context.Context, uuid.UUID, time.Time) error
+	FindByIDFn       func(context.Context, uuid.UUID) (*entities.Product, error)
+	ListActiveFn     func(context.Context) ([]entities.Product, error)
+	FindPublicByIDFn func(context.Context, uuid.UUID) (*entities.Product, error)
+	ListPublicFn     func(context.Context) ([]entities.Product, error)
 }
 
 func (m *ProductRepository) Create(ctx context.Context, product *entities.Product) error {
@@ -95,6 +97,12 @@ func (m *ProductRepository) FindByID(ctx context.Context, id uuid.UUID) (*entiti
 }
 func (m *ProductRepository) ListActive(ctx context.Context) ([]entities.Product, error) {
 	return m.ListActiveFn(ctx)
+}
+func (m *ProductRepository) FindPublicByID(ctx context.Context, id uuid.UUID) (*entities.Product, error) {
+	return m.FindPublicByIDFn(ctx, id)
+}
+func (m *ProductRepository) ListPublic(ctx context.Context) ([]entities.Product, error) {
+	return m.ListPublicFn(ctx)
 }
 
 type IngredientRepository struct {

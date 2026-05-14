@@ -21,13 +21,15 @@ INSERT INTO products (
     product_type,
     base_price,
     cost_price,
+    image_url,
+    is_public,
     is_active,
     created_at,
     updated_at
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
 )
-RETURNING id, name, description, product_type, base_price, cost_price, is_active, created_at, updated_at
+RETURNING id, name, description, product_type, base_price, cost_price, is_active, created_at, updated_at, image_url, is_public
 `
 
 type CreateProductParams struct {
@@ -37,6 +39,8 @@ type CreateProductParams struct {
 	ProductType string
 	BasePrice   decimal.Decimal
 	CostPrice   decimal.Decimal
+	ImageUrl    string
+	IsPublic    bool
 	IsActive    bool
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
@@ -50,6 +54,8 @@ func (q *Queries) CreateProduct(ctx context.Context, arg CreateProductParams) (P
 		arg.ProductType,
 		arg.BasePrice,
 		arg.CostPrice,
+		arg.ImageUrl,
+		arg.IsPublic,
 		arg.IsActive,
 		arg.CreatedAt,
 		arg.UpdatedAt,
@@ -65,6 +71,8 @@ func (q *Queries) CreateProduct(ctx context.Context, arg CreateProductParams) (P
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ImageUrl,
+		&i.IsPublic,
 	)
 	return i, err
 }
@@ -92,7 +100,7 @@ func (q *Queries) DeactivateProduct(ctx context.Context, arg DeactivateProductPa
 }
 
 const getProductByID = `-- name: GetProductByID :one
-SELECT id, name, description, product_type, base_price, cost_price, is_active, created_at, updated_at
+SELECT id, name, description, product_type, base_price, cost_price, is_active, created_at, updated_at, image_url, is_public
 FROM products
 WHERE id = $1
 `
@@ -110,12 +118,41 @@ func (q *Queries) GetProductByID(ctx context.Context, id uuid.UUID) (Product, er
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ImageUrl,
+		&i.IsPublic,
+	)
+	return i, err
+}
+
+const getPublicProductByID = `-- name: GetPublicProductByID :one
+SELECT id, name, description, product_type, base_price, cost_price, is_active, created_at, updated_at, image_url, is_public
+FROM products
+WHERE id = $1
+  AND is_active = TRUE
+  AND is_public = TRUE
+`
+
+func (q *Queries) GetPublicProductByID(ctx context.Context, id uuid.UUID) (Product, error) {
+	row := q.db.QueryRow(ctx, getPublicProductByID, id)
+	var i Product
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.ProductType,
+		&i.BasePrice,
+		&i.CostPrice,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ImageUrl,
+		&i.IsPublic,
 	)
 	return i, err
 }
 
 const listProducts = `-- name: ListProducts :many
-SELECT id, name, description, product_type, base_price, cost_price, is_active, created_at, updated_at
+SELECT id, name, description, product_type, base_price, cost_price, is_active, created_at, updated_at, image_url, is_public
 FROM products
 WHERE is_active = TRUE
 ORDER BY created_at DESC
@@ -140,6 +177,76 @@ func (q *Queries) ListProducts(ctx context.Context) ([]Product, error) {
 			&i.IsActive,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ImageUrl,
+			&i.IsPublic,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPublicProductTypes = `-- name: ListPublicProductTypes :many
+SELECT DISTINCT product_type
+FROM products
+WHERE is_active = TRUE
+  AND is_public = TRUE
+ORDER BY product_type ASC
+`
+
+func (q *Queries) ListPublicProductTypes(ctx context.Context) ([]string, error) {
+	rows, err := q.db.Query(ctx, listPublicProductTypes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var product_type string
+		if err := rows.Scan(&product_type); err != nil {
+			return nil, err
+		}
+		items = append(items, product_type)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPublicProducts = `-- name: ListPublicProducts :many
+SELECT id, name, description, product_type, base_price, cost_price, is_active, created_at, updated_at, image_url, is_public
+FROM products
+WHERE is_active = TRUE
+  AND is_public = TRUE
+ORDER BY created_at DESC
+`
+
+func (q *Queries) ListPublicProducts(ctx context.Context) ([]Product, error) {
+	rows, err := q.db.Query(ctx, listPublicProducts)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Product
+	for rows.Next() {
+		var i Product
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.ProductType,
+			&i.BasePrice,
+			&i.CostPrice,
+			&i.IsActive,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.ImageUrl,
+			&i.IsPublic,
 		); err != nil {
 			return nil, err
 		}
@@ -159,10 +266,12 @@ SET
     product_type = $4,
     base_price = $5,
     cost_price = $6,
-    is_active = $7,
-    updated_at = $8
+    image_url = $7,
+    is_public = $8,
+    is_active = $9,
+    updated_at = $10
 WHERE id = $1
-RETURNING id, name, description, product_type, base_price, cost_price, is_active, created_at, updated_at
+RETURNING id, name, description, product_type, base_price, cost_price, is_active, created_at, updated_at, image_url, is_public
 `
 
 type UpdateProductParams struct {
@@ -172,6 +281,8 @@ type UpdateProductParams struct {
 	ProductType string
 	BasePrice   decimal.Decimal
 	CostPrice   decimal.Decimal
+	ImageUrl    string
+	IsPublic    bool
 	IsActive    bool
 	UpdatedAt   time.Time
 }
@@ -184,6 +295,8 @@ func (q *Queries) UpdateProduct(ctx context.Context, arg UpdateProductParams) (P
 		arg.ProductType,
 		arg.BasePrice,
 		arg.CostPrice,
+		arg.ImageUrl,
+		arg.IsPublic,
 		arg.IsActive,
 		arg.UpdatedAt,
 	)
@@ -198,6 +311,8 @@ func (q *Queries) UpdateProduct(ctx context.Context, arg UpdateProductParams) (P
 		&i.IsActive,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ImageUrl,
+		&i.IsPublic,
 	)
 	return i, err
 }

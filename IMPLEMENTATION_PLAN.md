@@ -118,6 +118,8 @@ No se replantea la arquitectura. No se redisenan modulos existentes. La priorida
 
 ## Sprint 2 - Customer Panel y Guest Mode
 
+**Estado:** DONE
+
 ### Features
 
 - Rutas publicas para catalogo.
@@ -127,24 +129,24 @@ No se replantea la arquitectura. No se redisenan modulos existentes. La priorida
 
 ### Tasks
 
-- Crear migracion para productos:
+- [x] Crear migracion para productos:
   - `image_url`
   - `is_public`
   - campos simples de catalogo solo si hacen falta.
-- Agregar backfill: productos activos pueden iniciar como publicos si el negocio lo acepta.
-- Actualizar entidad, DTOs, repository y mapper de products.
-- Agregar endpoint publico para listar productos visibles.
-- Agregar endpoint publico para detalle de producto visible.
-- Agregar endpoint publico de categorias usando `product_type` existente, salvo que ya exista otra fuente.
-- Separar rutas publicas de `/products` admin si es necesario, por ejemplo `/public/products`.
-- Validar que guest pueda ver catalogo sin JWT.
-- Validar que guest no pueda crear orders, ver historial ni acceder a admin.
-- Agregar endpoints customer protegidos por `CUSTOMER` para perfil/historial solo si el MVP actual ya tiene datos suficientes.
-- Relacionar `users` con `customers` de forma gradual si el panel necesita historial por customer.
-- Agregar tests de rutas publicas, permisos guest y permisos customer.
-- Ejecutar `go fmt ./...`.
-- Ejecutar `go vet ./...`.
-- Ejecutar `go test ./...`.
+- [x] Agregar backfill: productos activos pueden iniciar como publicos si el negocio lo acepta.
+- [x] Actualizar entidad, DTOs, repository y mapper de products.
+- [x] Agregar endpoint publico para listar productos visibles.
+- [x] Agregar endpoint publico para detalle de producto visible.
+- [x] Agregar endpoint publico de categorias usando `product_type` existente, salvo que ya exista otra fuente.
+- [x] Separar rutas publicas de `/products` admin si es necesario, por ejemplo `/public/products`.
+- [x] Validar que guest pueda ver catalogo sin JWT.
+- [x] Validar que guest no pueda crear orders, ver historial ni acceder a admin.
+- [x] Agregar endpoints customer protegidos por `CUSTOMER` para perfil/historial solo si el MVP actual ya tiene datos suficientes.
+- [x] Relacionar `users` con `customers` de forma gradual si el panel necesita historial por customer.
+- [x] Agregar tests de rutas publicas, permisos guest y permisos customer.
+- [x] Ejecutar `go fmt ./...`.
+- [x] Ejecutar `go vet ./...`.
+- [x] Ejecutar `go test ./...`.
 
 ### Resultado esperado
 

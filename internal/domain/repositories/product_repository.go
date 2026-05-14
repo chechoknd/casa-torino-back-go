@@ -15,4 +15,6 @@ type ProductRepository interface {
 	Deactivate(ctx context.Context, id uuid.UUID, updatedAt time.Time) error
 	FindByID(ctx context.Context, id uuid.UUID) (*entities.Product, error)
 	ListActive(ctx context.Context) ([]entities.Product, error)
+	FindPublicByID(ctx context.Context, id uuid.UUID) (*entities.Product, error)
+	ListPublic(ctx context.Context) ([]entities.Product, error)
 }

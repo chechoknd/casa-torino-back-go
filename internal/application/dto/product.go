@@ -13,6 +13,8 @@ type CreateProductInput struct {
 	ProductType string
 	BasePrice   decimal.Decimal
 	CostPrice   decimal.Decimal
+	ImageURL    string
+	IsPublic    bool
 }
 
 type UpdateProductInput struct {
@@ -22,6 +24,8 @@ type UpdateProductInput struct {
 	ProductType string
 	BasePrice   decimal.Decimal
 	CostPrice   decimal.Decimal
+	ImageURL    string
+	IsPublic    bool
 }
 
 type ListProductsInput struct {
@@ -35,7 +39,20 @@ type ProductOutput struct {
 	ProductType string          `json:"product_type"`
 	BasePrice   decimal.Decimal `json:"base_price"`
 	CostPrice   decimal.Decimal `json:"cost_price"`
+	ImageURL    string          `json:"image_url"`
+	IsPublic    bool            `json:"is_public"`
 	IsActive    bool            `json:"is_active"`
+	CreatedAt   time.Time       `json:"created_at"`
+	UpdatedAt   time.Time       `json:"updated_at"`
+}
+
+type CatalogProductOutput struct {
+	ID          uuid.UUID       `json:"id"`
+	Name        string          `json:"name"`
+	Description string          `json:"description"`
+	ProductType string          `json:"product_type"`
+	BasePrice   decimal.Decimal `json:"base_price"`
+	ImageURL    string          `json:"image_url"`
 	CreatedAt   time.Time       `json:"created_at"`
 	UpdatedAt   time.Time       `json:"updated_at"`
 }

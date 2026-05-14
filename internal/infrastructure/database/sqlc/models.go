@@ -76,6 +76,8 @@ type Product struct {
 	IsActive    bool
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
+	ImageUrl    string
+	IsPublic    bool
 }
 
 type Recipe struct {
@@ -94,4 +96,25 @@ type RecipeItem struct {
 	IngredientID uuid.UUID
 	Quantity     decimal.Decimal
 	Unit         string
+}
+
+type RefreshToken struct {
+	ID        uuid.UUID
+	UserID    uuid.UUID
+	TokenHash string
+	CreatedAt time.Time
+	ExpiresAt time.Time
+	RevokedAt pgtype.Timestamptz
+}
+
+type User struct {
+	ID           uuid.UUID
+	Email        string
+	Username     string
+	FullName     string
+	PasswordHash string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	IsActive     bool
+	Role         string
 }

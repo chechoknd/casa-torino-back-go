@@ -38,6 +38,8 @@ func mapProduct(row sqlcdb.Product) (entities.Product, error) {
 		ProductType: productType,
 		BasePrice:   row.BasePrice,
 		CostPrice:   row.CostPrice,
+		ImageURL:    row.ImageUrl,
+		IsPublic:    row.IsPublic,
 		IsActive:    row.IsActive,
 		CreatedAt:   row.CreatedAt,
 		UpdatedAt:   row.UpdatedAt,

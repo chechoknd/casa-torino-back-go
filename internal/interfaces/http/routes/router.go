@@ -12,13 +12,14 @@ import (
 )
 
 type Dependencies struct {
-	Auth        *handlers.AuthHandler
-	Customers   *handlers.CustomerHandler
-	Products    *handlers.ProductHandler
-	Ingredients *handlers.IngredientHandler
-	Recipes     *handlers.RecipeHandler
-	Orders      *handlers.OrderHandler
-	Payments    *handlers.PaymentHandler
+	Auth          *handlers.AuthHandler
+	CustomerPanel *handlers.CustomerPanelHandler
+	Customers     *handlers.CustomerHandler
+	Products      *handlers.ProductHandler
+	Ingredients   *handlers.IngredientHandler
+	Recipes       *handlers.RecipeHandler
+	Orders        *handlers.OrderHandler
+	Payments      *handlers.PaymentHandler
 
 	CORSAllowedOrigins []string
 	TokenVerifier      appmiddleware.TokenVerifier
@@ -49,6 +50,25 @@ func NewRouter(deps Dependencies) http.Handler {
 			r.Post("/login", deps.Auth.Login)
 			r.Post("/refresh", deps.Auth.Refresh)
 			r.Post("/logout", deps.Auth.Logout)
+		})
+	}
+
+	if deps.Products != nil {
+		router.Route("/public", func(r chi.Router) {
+			r.Get("/products", deps.Products.ListPublic)
+			r.Get("/products/{id}", deps.Products.GetPublic)
+			r.Get("/product-categories", deps.Products.ListPublicCategories)
+		})
+	}
+
+	if deps.CustomerPanel != nil {
+		router.Route("/customer", func(r chi.Router) {
+			if deps.TokenVerifier != nil {
+				r.Use(appmiddleware.JWTAuth(deps.TokenVerifier))
+				r.Use(appmiddleware.RequireRole(valueobjects.UserRoleCustomer))
+			}
+			r.Get("/profile", deps.CustomerPanel.Profile)
+			r.Get("/orders", deps.CustomerPanel.Orders)
 		})
 	}
 

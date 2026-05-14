@@ -2,22 +2,11 @@
 
 ## TODO
 
-- Agregar imagen a products.
-- Agregar visibilidad publica a products.
-- Crear endpoints publicos de catalogo.
-- Crear endpoint publico de categorias.
-- Validar acceso guest sin JWT.
-- Bloquear compras para guest.
-- Validar permisos customer.
-- Ajustar tests de auth/JWT/middleware/routes.
-- Ajustar tests de products/catalogo.
-- Ejecutar `go fmt ./...`.
-- Ejecutar `go vet ./...`.
-- Ejecutar `go test ./...`.
+- Revisar estado final y preparar commit de Sprint 2.
 
 ## IN PROGRESS
 
-- Preparacion de Sprint 2 - Customer Panel y Guest Mode.
+- Preparar commit de Sprint 2.
 
 ## DONE
 
@@ -59,10 +48,27 @@
 - Smoke test ruta admin con token `ADMIN`: `200 OK`.
 - Usuario temporal de smoke test eliminado de la base local.
 - Sprint 1 - Backup, Auth y Roles completado.
+- Revisado products/rutas actuales para catalogo publico.
+- Agregada migracion `000006_add_product_catalog_fields`.
+- Aplicada migracion local: version `6`, dirty `false`.
+- Backfill de productos: activos como publicos, inactivos como no publicos.
+- Agregados campos `image_url` e `is_public` a products.
+- Actualizados entidad, DTOs, repository, mapper y sqlc de products.
+- Agregados endpoints publicos `/public/products`, `/public/products/{id}` y `/public/product-categories`.
+- Ajustados tests de products/catalogo.
+- Agregados endpoints customer `/customer/profile` y `/customer/orders`.
+- Panel cliente usa email del usuario autenticado para resolver customer existente.
+- Validado guest catalog sin JWT.
+- Validado guest sin acceso a `/orders` ni `/customer/profile`.
+- Validado customer con acceso a `/customer/profile` y `/customer/orders`.
+- Validada reversibilidad de migracion `000006` con `migrate-down` y `migrate-up`.
+- Ejecutado `go fmt ./...` despues de cambios de Sprint 2.
+- Ejecutado `go vet ./...` despues de cambios de Sprint 2.
+- Ejecutado `go test ./...` despues de cambios de Sprint 2.
+- Sprint 2 - Customer Panel y Guest Mode completado.
 
 ## BLOCKED
 
 - Definir usuario o estrategia inicial para `ADMIN`.
-- Confirmar si customers existentes se vinculan a users por email.
 - Confirmar formato inicial de imagen de producto: URL externa, path interno o storage futuro.
 - Confirmar si refresh tokens quedan igual en esta fase.

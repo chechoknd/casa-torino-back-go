@@ -16,6 +16,8 @@ type Product struct {
 	ProductType valueobjects.ProductType
 	BasePrice   decimal.Decimal
 	CostPrice   decimal.Decimal
+	ImageURL    string
+	IsPublic    bool
 	IsActive    bool
 	CreatedAt   time.Time
 	UpdatedAt   time.Time

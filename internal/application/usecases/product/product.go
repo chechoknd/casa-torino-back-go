@@ -2,6 +2,7 @@ package product
 
 import (
 	"context"
+	"sort"
 	"strings"
 	"time"
 
@@ -40,6 +41,8 @@ func (uc *UseCase) CreateProduct(ctx context.Context, input dto.CreateProductInp
 		ProductType: productType,
 		BasePrice:   input.BasePrice,
 		CostPrice:   input.CostPrice,
+		ImageURL:    strings.TrimSpace(input.ImageURL),
+		IsPublic:    input.IsPublic,
 		IsActive:    true,
 		CreatedAt:   now,
 		UpdatedAt:   now,
@@ -91,6 +94,69 @@ func (uc *UseCase) ListProducts(ctx context.Context, input dto.ListProductsInput
 	return output, nil
 }
 
+func (uc *UseCase) GetPublicProduct(ctx context.Context, id uuid.UUID) (dto.CatalogProductOutput, error) {
+	product, err := uc.products.FindPublicByID(ctx, id)
+	if err != nil {
+		return dto.CatalogProductOutput{}, err
+	}
+	if product == nil || !product.IsActive || !product.IsPublic {
+		return dto.CatalogProductOutput{}, domainerrors.ErrNotFound
+	}
+	return toCatalogProductOutput(*product), nil
+}
+
+func (uc *UseCase) ListPublicProducts(ctx context.Context, input dto.ListProductsInput) ([]dto.CatalogProductOutput, error) {
+	products, err := uc.products.ListPublic(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var filter valueobjects.ProductType
+	if strings.TrimSpace(input.ProductType) != "" {
+		filter, err = valueobjects.NewProductType(input.ProductType)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	output := make([]dto.CatalogProductOutput, 0, len(products))
+	for _, product := range products {
+		if !product.IsActive || !product.IsPublic {
+			continue
+		}
+		if filter != "" && product.ProductType != filter {
+			continue
+		}
+		output = append(output, toCatalogProductOutput(product))
+	}
+
+	return output, nil
+}
+
+func (uc *UseCase) ListPublicCategories(ctx context.Context) ([]string, error) {
+	products, err := uc.products.ListPublic(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	seen := make(map[string]struct{})
+	categories := make([]string, 0)
+	for _, product := range products {
+		if !product.IsActive || !product.IsPublic {
+			continue
+		}
+		category := string(product.ProductType)
+		if _, ok := seen[category]; ok {
+			continue
+		}
+		seen[category] = struct{}{}
+		categories = append(categories, category)
+	}
+	sort.Strings(categories)
+
+	return categories, nil
+}
+
 func (uc *UseCase) UpdateProduct(ctx context.Context, input dto.UpdateProductInput) (dto.ProductOutput, error) {
 	product, err := uc.products.FindByID(ctx, input.ID)
 	if err != nil {
@@ -113,6 +179,8 @@ func (uc *UseCase) UpdateProduct(ctx context.Context, input dto.UpdateProductInp
 	product.ProductType = productType
 	product.BasePrice = input.BasePrice
 	product.CostPrice = input.CostPrice
+	product.ImageURL = strings.TrimSpace(input.ImageURL)
+	product.IsPublic = input.IsPublic
 	product.UpdatedAt = time.Now().UTC()
 
 	if err := uc.products.Update(ctx, product); err != nil {
@@ -142,7 +210,22 @@ func toProductOutput(product entities.Product) dto.ProductOutput {
 		ProductType: string(product.ProductType),
 		BasePrice:   product.BasePrice,
 		CostPrice:   product.CostPrice,
+		ImageURL:    product.ImageURL,
+		IsPublic:    product.IsPublic,
 		IsActive:    product.IsActive,
+		CreatedAt:   product.CreatedAt,
+		UpdatedAt:   product.UpdatedAt,
+	}
+}
+
+func toCatalogProductOutput(product entities.Product) dto.CatalogProductOutput {
+	return dto.CatalogProductOutput{
+		ID:          product.ID,
+		Name:        product.Name,
+		Description: product.Description,
+		ProductType: string(product.ProductType),
+		BasePrice:   product.BasePrice,
+		ImageURL:    product.ImageURL,
 		CreatedAt:   product.CreatedAt,
 		UpdatedAt:   product.UpdatedAt,
 	}

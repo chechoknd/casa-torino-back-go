@@ -11,6 +11,7 @@ import (
 
 	authuc "github.com/casatorino/backend/internal/application/usecases/auth"
 	customeruc "github.com/casatorino/backend/internal/application/usecases/customer"
+	customerpaneluc "github.com/casatorino/backend/internal/application/usecases/customerpanel"
 	ingredientuc "github.com/casatorino/backend/internal/application/usecases/ingredient"
 	orderuc "github.com/casatorino/backend/internal/application/usecases/order"
 	paymentuc "github.com/casatorino/backend/internal/application/usecases/payment"
@@ -76,15 +77,17 @@ func main() {
 	recipeUseCase := recipeuc.NewUseCase(recipeRepo, productRepo, ingredientRepo)
 	orderUseCase := orderuc.NewUseCase(orderRepo, customerRepo, productRepo)
 	paymentUseCase := paymentuc.NewUseCase(paymentRepo, orderRepo, productRepo)
+	customerPanelUseCase := customerpaneluc.NewUseCase(customerRepo, orderUseCase)
 
 	router := routes.NewRouter(routes.Dependencies{
-		Auth:        handlers.NewAuthHandler(authUseCase),
-		Customers:   handlers.NewCustomerHandler(customerUseCase),
-		Products:    handlers.NewProductHandler(productUseCase),
-		Ingredients: handlers.NewIngredientHandler(ingredientUseCase),
-		Recipes:     handlers.NewRecipeHandler(recipeUseCase),
-		Orders:      handlers.NewOrderHandler(orderUseCase),
-		Payments:    handlers.NewPaymentHandler(paymentUseCase),
+		Auth:          handlers.NewAuthHandler(authUseCase),
+		CustomerPanel: handlers.NewCustomerPanelHandler(customerPanelUseCase),
+		Customers:     handlers.NewCustomerHandler(customerUseCase),
+		Products:      handlers.NewProductHandler(productUseCase),
+		Ingredients:   handlers.NewIngredientHandler(ingredientUseCase),
+		Recipes:       handlers.NewRecipeHandler(recipeUseCase),
+		Orders:        handlers.NewOrderHandler(orderUseCase),
+		Payments:      handlers.NewPaymentHandler(paymentUseCase),
 		CORSAllowedOrigins: []string{
 			cfg.FrontendURL,
 			"http://localhost:4200",

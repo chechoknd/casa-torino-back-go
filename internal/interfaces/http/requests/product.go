@@ -6,6 +6,8 @@ type CreateProductRequest struct {
 	ProductType string `json:"product_type"`
 	BasePrice   string `json:"base_price"`
 	CostPrice   string `json:"cost_price"`
+	ImageURL    string `json:"image_url"`
+	IsPublic    bool   `json:"is_public"`
 }
 
 type UpdateProductRequest struct {
@@ -14,4 +16,6 @@ type UpdateProductRequest struct {
 	ProductType string `json:"product_type"`
 	BasePrice   string `json:"base_price"`
 	CostPrice   string `json:"cost_price"`
+	ImageURL    string `json:"image_url"`
+	IsPublic    bool   `json:"is_public"`
 }

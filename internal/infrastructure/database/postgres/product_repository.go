@@ -34,6 +34,8 @@ func (r *ProductRepository) Create(ctx context.Context, product *entities.Produc
 		ProductType: string(product.ProductType),
 		BasePrice:   product.BasePrice,
 		CostPrice:   product.CostPrice,
+		ImageUrl:    product.ImageURL,
+		IsPublic:    product.IsPublic,
 		IsActive:    product.IsActive,
 		CreatedAt:   product.CreatedAt,
 		UpdatedAt:   product.UpdatedAt,
@@ -59,6 +61,8 @@ func (r *ProductRepository) Update(ctx context.Context, product *entities.Produc
 		ProductType: string(product.ProductType),
 		BasePrice:   product.BasePrice,
 		CostPrice:   product.CostPrice,
+		ImageUrl:    product.ImageURL,
+		IsPublic:    product.IsPublic,
 		IsActive:    product.IsActive,
 		UpdatedAt:   product.UpdatedAt,
 	})
@@ -105,6 +109,39 @@ func (r *ProductRepository) FindByID(ctx context.Context, id uuid.UUID) (*entiti
 
 func (r *ProductRepository) ListActive(ctx context.Context) ([]entities.Product, error) {
 	rows, err := r.queries.ListProducts(ctx)
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	products := make([]entities.Product, 0, len(rows))
+	for _, row := range rows {
+		product, err := mapProduct(row)
+		if err != nil {
+			return nil, err
+		}
+
+		products = append(products, product)
+	}
+
+	return products, nil
+}
+
+func (r *ProductRepository) FindPublicByID(ctx context.Context, id uuid.UUID) (*entities.Product, error) {
+	row, err := r.queries.GetPublicProductByID(ctx, id)
+	if err != nil {
+		return nil, mapError(err)
+	}
+
+	mapped, err := mapProduct(row)
+	if err != nil {
+		return nil, err
+	}
+
+	return &mapped, nil
+}
+
+func (r *ProductRepository) ListPublic(ctx context.Context) ([]entities.Product, error) {
+	rows, err := r.queries.ListPublicProducts(ctx)
 	if err != nil {
 		return nil, mapError(err)
 	}
